@@ -1,0 +1,95 @@
+[project]
+name = "jam2025"
+version = "0.0.1"
+description = "GDG Jam 2025"
+readme = "README.md"
+authors = [
+    { name = "DigiDuncan", email = "digiduncan@gmail.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License"
+]
+requires-python = ">= 3.13"
+dependencies = [
+    "arcade>=3.1.0",
+    "digiformatter==0.5.7.2",
+    "numpy==2.2.6",
+    "opencv-python==4.12.0.88",
+    "scipy==1.16.1"
+]
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "pytest==7.2.1",
+    "flake8==6.0.0",
+    "autopep8==2.0.1"
+]
+
+[project.urls]
+Homepage = "https://github.com/DigiDuncan/Jam2025"
+Repository = "https://github.com/DigiDuncan/Jam2025.git"
+Issues = "https://github.com/DigiDuncan/Jam2025/issues"
+
+[project.scripts]
+jam2025 = "jam2025.main:main"
+
+[tool.ruff.lint]
+select = [
+    "F",        # Pyflakes
+    "E", "W",   # pycodestyle
+    "C90",      # mccabe
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "ANN",      # flake8-annotations
+    "ASYNC",    # flake8-async
+    "BLE",      # flake8-blind-except
+    # "FBT",      # flake8-boolean-trap
+    "B",        # flake8-bugbear
+    "A",        # flake8-builtins
+    "COM",      # flake8-commas
+    "C4",       # flake8-comprehensions
+    "DTZ",      # flake8-datetimez
+    "ICN",      # flake8-import-conventions
+    "LOG",      # flake8-logging
+    "PIE",      # flake8-pie
+    "T20",      # flake8-print
+    "PYI",      # flake8-pyi
+    "PT",       # flake8-pytest-style
+    "RSE",      # flake8-raise
+    "RET",      # flake8-return
+    "SLF",      # flake8-self
+    "PTH",      # flake8-use-pathlib
+    "FIX",      # flake8-fixme
+    "PGH",      # pygrep-hooks
+    "RUF",      # Ruff-specific rules
+
+]
+ignore = [
+    "ANN101",
+    "ANN102",
+    "ANN204",
+    "B019",
+    "C901",
+    "COM812",
+    "E501",
+    "E741",
+    "N817",
+    "PIE790",
+    "RET503",
+    "RET504",
+    "RET505",
+    "RET507",
+    "RUF001",
+    "RUF013",
+    "PTH123",
+    "C401",
+    "PYI013",
+    "FBT001",
+    "ANN401",
+    "N802",
+    "T201"
+]
+

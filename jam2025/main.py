@@ -48,7 +48,7 @@ class TestWindow(arcade.Window):
         self.show_cloud = False
         self.show_shape = False
         self.show_ui = True
-        self.do_flip = False
+        self.do_flip = True
 
         self.pixel_found = False
         self.brightest_px: tuple[int, int] | None = None

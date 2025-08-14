@@ -36,10 +36,14 @@ class TestWindow(arcade.Window):
         self.spritelist.append(self.webcam_sprite)
         self.spritelist.append(self.crunchy_webcam_sprite)
 
-        self.coordinate_text = arcade.Text("No bright spot found!", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
+        self.fps_text = arcade.Text("000.0 FPS", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
+        self.coordinate_text = arcade.Text("No bright spot found!", 5, self.fps_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
         self.light_text = arcade.Text("000", 5, self.coordinate_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
 
         self.show_crunchy = False
+        self.show_video = True
+        self.show_raw_point = True
+        self.show_smooth_point = True
         self.show_cloud = False
         self.show_shape = False
         self.show_ui = True
@@ -61,7 +65,7 @@ class TestWindow(arcade.Window):
         self.sampled_points_text = arcade.Text(f"Sampled Points: {self.top_pixels}", self.width - 5, self.downsample_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.alpha_text = arcade.Text(f"Camera Alpha: {self.camera_alpha}", self.width - 5, self.sampled_points_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
 
-        self.keybind_text = arcade.Text(f"[Z] Show Shape [X] Show Cloud [C] Show Crunchy [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
+        self.keybind_text = arcade.Text("[Z] Show Shape [X] Show Cloud [C] Show Crunchy [V] Show Video [<] Show Point [>] Show Smooth Point [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
 
         self.animator = SecondOrderAnimatorKClamped(1, 1, 0, Vec2(0, 0), Vec2(0, 0), 0)
 
@@ -109,6 +113,12 @@ class TestWindow(arcade.Window):
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.C:
             self.show_crunchy = not self.show_crunchy
+        elif symbol == arcade.key.V:
+            self.show_video = not self.show_video
+        if symbol == arcade.key.COMMA:
+            self.show_raw_point = not self.show_raw_point
+        elif symbol == arcade.key.PERIOD:
+            self.show_smooth_point = not self.show_smooth_point
         elif symbol == arcade.key.X:
             self.show_cloud = not self.show_cloud
         elif symbol == arcade.key.Z:
@@ -141,7 +151,7 @@ class TestWindow(arcade.Window):
             self.camera_alpha += int(scroll_y) * 16
             self.camera_alpha = min(255, max(0, self.camera_alpha))
 
-    def on_update(self, delta_time: float) -> bool | None:
+    def on_update(self, delta_time: float) -> None:
         frame = self.read_frame()
         crunchy_frame = self.read_frame(self.downsample)
         if frame is not None and crunchy_frame is not None:
@@ -149,7 +159,7 @@ class TestWindow(arcade.Window):
             tex = arcade.Texture(frame)
             self.webcam_sprite.texture = tex
             self.webcam_sprite.size = self.size
-            self.webcam_sprite.alpha = self.camera_alpha
+            self.webcam_sprite.alpha = self.camera_alpha if self.show_video else 0
 
             crunchy_frame = crunchy_frame.convert("RGBA")
             crunchy_tex = arcade.Texture(crunchy_frame)
@@ -159,9 +169,10 @@ class TestWindow(arcade.Window):
         self.brightest_px = self.get_brightest_pixel(self.threshold, self.downsample)
         if self.brightest_px:
             self.animated_px = self.animator.update(delta_time, Vec2(*self.brightest_px))
-        self.update_ui()
+        self.update_ui(delta_time)
 
-    def update_ui(self):
+    def update_ui(self, delta_time: float) -> None:
+        self.fps_text.text = f"{1/delta_time:.1f} FPS"
         if self.brightest_px:
             self.coordinate_text.text = f"({self.brightest_px[0]}, {self.brightest_px[1]})"
             self.light_text.text = str(self.highest_l)
@@ -176,8 +187,9 @@ class TestWindow(arcade.Window):
         self.clear(arcade.color.BLACK)
         self.spritelist.draw()
         if self.brightest_px:
-            rect = arcade.XYWH(self.brightest_px[0], self.brightest_px[1], 10, 10)
-            arcade.draw_rect_filled(rect, arcade.color.RED)
+            if self.show_raw_point:
+                rect = arcade.XYWH(self.brightest_px[0], self.brightest_px[1], 10, 10)
+                arcade.draw_rect_filled(rect, arcade.color.RED)
 
             if self.show_cloud or self.show_shape:
                 cloud = sorted([(x[0][0] * self.downsample * 2, x[0][1] * self.downsample * 2) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
@@ -187,7 +199,7 @@ class TestWindow(arcade.Window):
                     arcade.draw_points(cloud, arcade.color.BLUE, 3)
             if self.show_ui:
                 self.light_text.draw()
-        if self.animated_px:
+        if self.animated_px and self.show_smooth_point:
             arect = arcade.XYWH(self.animated_px[0], self.animated_px[1], 10, 10)
             arcade.draw_rect_filled(arect, arcade.color.GREEN)
         if self.show_ui:
@@ -197,6 +209,7 @@ class TestWindow(arcade.Window):
             self.sampled_points_text.draw()
             self.alpha_text.draw()
             self.keybind_text.draw()
+        self.fps_text.draw()
 
 def main() -> None:
     win = TestWindow()

@@ -1,13 +1,24 @@
+import math
 import arcade
 import cv2
 from PIL import Image
 import numpy as np
-from scipy.ndimage import gaussian_filter
 import os
 import threading
 
+# from .procedural_animator import SecondOrderAnimatorKClamped
+
 def rgb_to_l(r: int, g: int, b: int) -> int:
     return int(0.2126 * r + 0.7152 * g + 0.0722 * b)
+
+def get_polar_angle(x: float, y: float, center: tuple[float, float] = (0, 0)) -> float:
+    return math.atan2(y - center[1], x - center[0])
+
+def text_to_rect(text: arcade.Text) -> arcade.types.Rect:
+    """This will be unnecessary once my PR is merged.
+    https://github.com/pythonarcade/arcade/pull/2759
+    """
+    return arcade.types.LRBT(text.left, text.right, text.bottom, text.top)
 
 def open_settings(name: str = "USB Video Device") -> None:
     os.system(f"ffmpeg -hide_banner -loglevel error -f dshow -show_video_device_dialog true -i video=\"{name}\"")
@@ -29,39 +40,38 @@ class TestWindow(arcade.Window):
 
         self.show_crunchy = False
         self.show_cloud = False
-        self.blur = False
-        self.blur_kernel = (3, 3, 0)
+        self.show_shape = False
 
         self.pixel_found = False
         self.brightest_px: tuple[int, int] | None = None
         self.highest_l: int | None = None
-
-        self.threshold = 230
-        self.downsample = 8
-        self.top_pixels = 25
-
-        self.info_text = arcade.Text(f"Threshold: {self.threshold}\nDownsample: {self.downsample}x\nAvg. Of: {self.top_pixels}px\nBlur: {self.blur}", self.width - 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right", width = self.width / 2, multiline = True)
         self.cloud = []
 
-    def get_frame_data(self, downsample: int = 1, blur = False) -> np.ndarray | None:
+        self.threshold = 245
+        self.downsample = 8
+        self.top_pixels = 10
+
+        self.threshold_text = arcade.Text(f"Threshold: {self.threshold}", self.width - 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
+        self.downsample_text = arcade.Text(f"Downsample: {self.downsample}x", self.width - 5, self.threshold_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
+        self.sampled_points_text = arcade.Text(f"Sampled Points: {self.top_pixels}", self.width - 5, self.downsample_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
+
+    def get_frame_data(self, downsample: int = 1,) -> np.ndarray | None:
         retval, frame = self.cam.read()
         if not retval:
             print("Can't read frame!")
         else:
             frame = frame[:, :, ::-1]  # The camera data is BGR for some reason
             frame = frame[::downsample, ::downsample]
-            if blur:
-                frame = gaussian_filter(frame, self.blur_kernel)
             return frame
 
-    def read_frame(self, downsample: int = 1, blur: bool = False) -> Image.Image | None:
-        frame = self.get_frame_data(downsample, blur)
+    def read_frame(self, downsample: int = 1) -> Image.Image | None:
+        frame = self.get_frame_data(downsample)
         if frame is not None:
             i = Image.fromarray(frame, mode = "RGB")
             return i
 
     def get_brightest_pixel(self, threshold: int = 230, downsample: int = 8) -> tuple[int, int] | None:
-        frame = self.get_frame_data(downsample, self.blur)
+        frame = self.get_frame_data(downsample)
         if frame is None:
             self.pixel_found = False
             return None
@@ -89,17 +99,33 @@ class TestWindow(arcade.Window):
             self.show_crunchy = not self.show_crunchy
         elif symbol == arcade.key.X:
             self.show_cloud = not self.show_cloud
+        elif symbol == arcade.key.Z:
+            self.show_shape = not self.show_shape
         elif symbol == arcade.key.S:
             thread = threading.Thread(target = open_settings, args = (self.cam_name, ))
             thread.start()
         elif symbol == arcade.key.B:
             self.blur = not self.blur
 
+    def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
+        point = (x, y)
+        threshold_rect = text_to_rect(self.threshold_text)
+        downsample_rect = text_to_rect(self.downsample_text)
+        sampled_points_rect = text_to_rect(self.sampled_points_text)
+
+        if point in threshold_rect:
+            self.threshold += int(scroll_y)
+            self.threshold = max(0, self.threshold)
+        elif point in downsample_rect:
+            self.downsample += int(scroll_y)
+            self.downsample = max(1, self.downsample)
+        elif point in sampled_points_rect:
+            self.top_pixels += int(scroll_y)
+            self.top_pixels = max(1, self.top_pixels)
+
     def on_update(self, delta_time: float) -> bool | None:
         frame = self.read_frame()
         crunchy_frame = self.read_frame(self.downsample)
-        if self.blur:
-            ...
         if frame is not None and crunchy_frame is not None:
             frame = frame.convert("RGBA")
             tex = arcade.Texture(frame)
@@ -113,12 +139,17 @@ class TestWindow(arcade.Window):
             self.crunchy_webcam_sprite.size = self.size
             self.crunchy_webcam_sprite.alpha = 255 if self.show_crunchy else 0
         self.brightest_px = self.get_brightest_pixel(self.threshold, self.downsample)
+        self.update_ui()
+
+    def update_ui(self):
         if self.brightest_px:
             self.coordinate_text.text = f"({self.brightest_px[0]}, {self.brightest_px[1]})"
             self.light_text.text = str(self.highest_l)
         else:
             self.coordinate_text.text = "No bright point found!"
-        self.info_text.text = f"Threshold: {self.threshold}\nDownsample: {self.downsample}x\nAvg. Of: {self.top_pixels}px\nBlur: {self.blur}"
+        self.threshold_text.text = f"Threshold: {self.threshold}"
+        self.downsample_text.text = f"Downsample: {self.downsample}x"
+        self.sampled_points_text.text = f"Sampled Points: {self.top_pixels}"
 
     def on_draw(self) -> None:
         self.clear(arcade.color.BLACK)
@@ -126,11 +157,17 @@ class TestWindow(arcade.Window):
         if self.brightest_px:
             rect = arcade.XYWH(self.brightest_px[0], self.brightest_px[1], 10, 10)
             arcade.draw_rect_filled(rect, arcade.color.RED)
-            if self.show_cloud:
-                arcade.draw_points([(x[0][0] * self.downsample * 2, x[0][1] * self.downsample * 2) for x in self.cloud], arcade.color.BLUE, 3)
+            if self.show_cloud or self.show_shape:
+                cloud = sorted([(x[0][0] * self.downsample * 2, x[0][1] * self.downsample * 2) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
+                if self.show_shape:
+                    arcade.draw_polygon_filled(cloud, arcade.color.BLUE.replace(a = 128))
+                if self.show_cloud:
+                    arcade.draw_points(cloud, arcade.color.BLUE, 3)
             self.light_text.draw()
         self.coordinate_text.draw()
-        self.info_text.draw()
+        self.threshold_text.draw()
+        self.downsample_text.draw()
+        self.sampled_points_text.draw()
 
 def main() -> None:
     win = TestWindow()

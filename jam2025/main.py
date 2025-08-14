@@ -22,13 +22,14 @@ def text_to_rect(text: arcade.Text) -> arcade.types.Rect:
     return arcade.types.LRBT(text.left, text.right, text.bottom, text.top)
 
 def open_settings(name: str = "USB Video Device") -> None:
+    """WOW THIS SUCKS"""
     os.system(f"ffmpeg -hide_banner -loglevel error -f dshow -show_video_device_dialog true -i video=\"{name}\"")
 
 class TestWindow(arcade.Window):
     def __init__(self) -> None:
         super().__init__()
         self.cam = cv2.VideoCapture(0)
-        self.cam_name = "USB Video Device"
+        self.cam_name = "USB Video Device"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)
 
         self.spritelist = arcade.SpriteList()
         self.webcam_sprite = arcade.SpriteSolidColor(self.width, self.height, center_x = self.center_x, center_y = self.center_y)
@@ -69,25 +70,32 @@ class TestWindow(arcade.Window):
 
         self.animator = SecondOrderAnimatorKClamped(1, 1, 0, Vec2(0, 0), Vec2(0, 0), 0)
 
-    def get_frame_data(self, downsample: int = 1) -> np.ndarray | None:
-        retval, frame = self.cam.read()
+    def get_frame_data(self) -> np.ndarray | None:
+        retval, frame = self.cam.read()  # !: THIS is the slowest thing in the app, I think.
         if not retval:
             print("Can't read frame!")
         else:
             frame = frame[:, :, ::-1]  # The camera data is BGR for some reason
-            frame = frame[::downsample, ::downsample]
             if self.do_flip:
                 frame = np.fliplr(frame)
             return frame
 
+    def frame_data_to_image(self, data: np.ndarray) -> Image.Image:
+        return Image.fromarray(data, mode = "RGB")
+
     def read_frame(self, downsample: int = 1) -> Image.Image | None:
-        frame = self.get_frame_data(downsample)
+        frame = self.get_frame_data()
+        if frame is not None and downsample != 1:
+            frame = frame[::downsample, ::downsample]
         if frame is not None:
-            i = Image.fromarray(frame, mode = "RGB")
+            i = self.frame_data_to_image(frame)
             return i
 
     def get_brightest_pixel(self, threshold: int = 230, downsample: int = 8) -> tuple[int, int] | None:
-        frame = self.get_frame_data(downsample)
+        """You'd think this is the most expensive function, but it's not!"""
+        frame = self.get_frame_data()
+        if frame is not None and downsample != 1:
+            frame = frame[::downsample, ::downsample]
         if frame is None:
             self.pixel_found = False
             return None
@@ -152,8 +160,10 @@ class TestWindow(arcade.Window):
             self.camera_alpha = min(255, max(0, self.camera_alpha))
 
     def on_update(self, delta_time: float) -> None:
-        frame = self.read_frame()
-        crunchy_frame = self.read_frame(self.downsample)
+        frame_data = self.get_frame_data()
+        frame = self.frame_data_to_image(frame_data) if frame_data is not None else None
+        crunchy_frame = self.frame_data_to_image(frame_data[::self.downsample, ::self.downsample]) if frame_data is not None else None
+
         if frame is not None and crunchy_frame is not None:
             frame = frame.convert("RGBA")
             tex = arcade.Texture(frame)

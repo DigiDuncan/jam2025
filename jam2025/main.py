@@ -47,6 +47,7 @@ class TestWindow(arcade.Window):
         self.show_smooth_point = True
         self.show_cloud = False
         self.show_shape = False
+        self.show_lightness = False
         self.show_ui = True
         self.do_flip = True
 
@@ -55,20 +56,31 @@ class TestWindow(arcade.Window):
         self.animated_px: tuple[int, int] | None = None
         self.highest_l: int | None = None
         self.cloud = []
+        self.no_pixel_time = 0.0
 
         self.threshold = 245
         self.downsample = 8
         self.top_pixels = 10
         self.camera_alpha = 255
+        self.timeout = 1.0
+        self.frequency = 2.0
+        self.dampening = 1.0
+        self.response = 1.0
 
         self.threshold_text = arcade.Text(f"Threshold: {self.threshold}", self.width - 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.downsample_text = arcade.Text(f"Downsample: {self.downsample}x", self.width - 5, self.threshold_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.sampled_points_text = arcade.Text(f"Sampled Points: {self.top_pixels}", self.width - 5, self.downsample_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.alpha_text = arcade.Text(f"Camera Alpha: {self.camera_alpha}", self.width - 5, self.sampled_points_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
+        self.frequency_text = arcade.Text(f"Frequency: {self.frequency:.1f}", self.width - 5, self.alpha_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
+        self.dampening_text = arcade.Text(f"Dampening: {self.dampening:.1f}", self.width - 5, self.frequency_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
+        self.response_text = arcade.Text(f"Response: {self.response:.1f}", self.width - 5, self.dampening_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
 
-        self.keybind_text = arcade.Text("[Z] Show Shape [X] Show Cloud [C] Show Crunchy [V] Show Video [<] Show Point [>] Show Smooth Point [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
+        self.keybind_text = arcade.Text("[Z] Show Shape [X] Show Cloud [C] Show Crunchy [V] Show Video [B] Show Lightness [<] Show Point [>] Show Smooth Point [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
 
-        self.animator = SecondOrderAnimatorKClamped(1, 1, 0, Vec2(0, 0), Vec2(0, 0), 0)
+        self.animator = SecondOrderAnimatorKClamped(self.frequency, self.dampening, self.response, Vec2(0, 0), Vec2(0, 0), 0)
+
+    def refresh_animator(self):
+        self.animator = SecondOrderAnimatorKClamped(self.frequency, self.dampening, self.response, Vec2(*self.brightest_px) if self.brightest_px else Vec2(0, 0), Vec2(*self.brightest_px) if self.brightest_px else Vec2(0, 0), 0)
 
     def get_frame_data(self) -> np.ndarray | None:
         retval, frame = self.cam.read()  # !: THIS is the slowest thing in the app, I think.
@@ -123,7 +135,9 @@ class TestWindow(arcade.Window):
             self.show_crunchy = not self.show_crunchy
         elif symbol == arcade.key.V:
             self.show_video = not self.show_video
-        if symbol == arcade.key.COMMA:
+        elif symbol == arcade.key.B:
+            self.show_lightness = not self.show_lightness
+        elif symbol == arcade.key.COMMA:
             self.show_raw_point = not self.show_raw_point
         elif symbol == arcade.key.PERIOD:
             self.show_smooth_point = not self.show_smooth_point
@@ -145,6 +159,9 @@ class TestWindow(arcade.Window):
         downsample_rect = text_to_rect(self.downsample_text)
         sampled_points_rect = text_to_rect(self.sampled_points_text)
         alpha_rect = text_to_rect(self.alpha_text)
+        frequency_rect = text_to_rect(self.frequency_text)
+        dampening_rect = text_to_rect(self.dampening_text)
+        response_rect = text_to_rect(self.response_text)
 
         if point in threshold_rect:
             self.threshold += int(scroll_y)
@@ -158,6 +175,15 @@ class TestWindow(arcade.Window):
         elif point in alpha_rect:
             self.camera_alpha += int(scroll_y) * 16
             self.camera_alpha = min(255, max(0, self.camera_alpha))
+        elif point in frequency_rect:
+            self.frequency += scroll_y * 0.1
+            self.refresh_animator()
+        elif point in dampening_rect:
+            self.dampening += scroll_y * 0.1
+            self.refresh_animator()
+        elif point in response_rect:
+            self.response += scroll_y * 0.1
+            self.refresh_animator()
 
     def on_update(self, delta_time: float) -> None:
         frame_data = self.get_frame_data()
@@ -166,19 +192,30 @@ class TestWindow(arcade.Window):
 
         if frame is not None and crunchy_frame is not None:
             frame = frame.convert("RGBA")
+            if self.show_lightness:
+                frame = frame.convert("L").convert("RGBA")
             tex = arcade.Texture(frame)
             self.webcam_sprite.texture = tex
             self.webcam_sprite.size = self.size
             self.webcam_sprite.alpha = self.camera_alpha if self.show_video else 0
 
             crunchy_frame = crunchy_frame.convert("RGBA")
+            if self.show_lightness:
+                crunchy_frame = crunchy_frame.convert("L").convert("RGBA")
             crunchy_tex = arcade.Texture(crunchy_frame)
             self.crunchy_webcam_sprite.texture = crunchy_tex
             self.crunchy_webcam_sprite.size = self.size
             self.crunchy_webcam_sprite.alpha = 255 if self.show_crunchy else 0
         self.brightest_px = self.get_brightest_pixel(self.threshold, self.downsample)
+        if self.animated_px is None and self.brightest_px:
+            self.refresh_animator()
         if self.brightest_px:
+            self.no_pixel_time = 0.0
             self.animated_px = self.animator.update(delta_time, Vec2(*self.brightest_px))
+        else:
+            self.no_pixel_time += delta_time
+            if self.no_pixel_time >= self.timeout:
+                self.animated_px = None
         self.update_ui(delta_time)
 
     def update_ui(self, delta_time: float) -> None:
@@ -192,6 +229,9 @@ class TestWindow(arcade.Window):
         self.downsample_text.text = f"Downsample: {self.downsample}x"
         self.sampled_points_text.text = f"Sampled Points: {self.top_pixels}"
         self.alpha_text.text = f"Alpha: {self.camera_alpha}"
+        self.frequency_text.text = f"Frequency: {self.frequency:.1f}"
+        self.dampening_text.text = f"Dampening: {self.dampening:.1f}"
+        self.response_text.text = f"Response: {self.response:.1f}"
 
     def on_draw(self) -> None:
         self.clear(arcade.color.BLACK)
@@ -218,6 +258,9 @@ class TestWindow(arcade.Window):
             self.downsample_text.draw()
             self.sampled_points_text.draw()
             self.alpha_text.draw()
+            self.frequency_text.draw()
+            self.dampening_text.draw()
+            self.response_text.draw()
             self.keybind_text.draw()
         self.fps_text.draw()
 

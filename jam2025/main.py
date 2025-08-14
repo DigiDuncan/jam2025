@@ -42,6 +42,8 @@ class TestWindow(arcade.Window):
         self.show_crunchy = False
         self.show_cloud = False
         self.show_shape = False
+        self.show_ui = True
+        self.do_flip = False
 
         self.pixel_found = False
         self.brightest_px: tuple[int, int] | None = None
@@ -59,15 +61,19 @@ class TestWindow(arcade.Window):
         self.sampled_points_text = arcade.Text(f"Sampled Points: {self.top_pixels}", self.width - 5, self.downsample_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.alpha_text = arcade.Text(f"Camera Alpha: {self.camera_alpha}", self.width - 5, self.sampled_points_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
 
+        self.keybind_text = arcade.Text(f"[Z] Show Shape [X] Show Cloud [C] Show Crunchy [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
+
         self.animator = SecondOrderAnimatorKClamped(1, 1, 0, Vec2(0, 0), Vec2(0, 0), 0)
 
-    def get_frame_data(self, downsample: int = 1,) -> np.ndarray | None:
+    def get_frame_data(self, downsample: int = 1) -> np.ndarray | None:
         retval, frame = self.cam.read()
         if not retval:
             print("Can't read frame!")
         else:
             frame = frame[:, :, ::-1]  # The camera data is BGR for some reason
             frame = frame[::downsample, ::downsample]
+            if self.do_flip:
+                frame = np.fliplr(frame)
             return frame
 
     def read_frame(self, downsample: int = 1) -> Image.Image | None:
@@ -110,6 +116,10 @@ class TestWindow(arcade.Window):
         elif symbol == arcade.key.S:
             thread = threading.Thread(target = open_settings, args = (self.cam_name,))
             thread.start()
+        elif symbol == arcade.key.U:
+            self.show_ui = not self.show_ui
+        elif symbol == arcade.key.F:
+            self.do_flip = not self.do_flip
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
         point = (x, y)
@@ -169,21 +179,24 @@ class TestWindow(arcade.Window):
             rect = arcade.XYWH(self.brightest_px[0], self.brightest_px[1], 10, 10)
             arcade.draw_rect_filled(rect, arcade.color.RED)
 
-            arect = arcade.XYWH(self.animated_px[0], self.animated_px[1], 10, 10)
-            arcade.draw_rect_filled(arect, arcade.color.GREEN)
-
             if self.show_cloud or self.show_shape:
                 cloud = sorted([(x[0][0] * self.downsample * 2, x[0][1] * self.downsample * 2) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
                 if self.show_shape:
                     arcade.draw_polygon_filled(cloud, arcade.color.BLUE.replace(a = 128))
                 if self.show_cloud:
                     arcade.draw_points(cloud, arcade.color.BLUE, 3)
-            self.light_text.draw()
-        self.coordinate_text.draw()
-        self.threshold_text.draw()
-        self.downsample_text.draw()
-        self.sampled_points_text.draw()
-        self.alpha_text.draw()
+            if self.show_ui:
+                self.light_text.draw()
+        if self.animated_px:
+            arect = arcade.XYWH(self.animated_px[0], self.animated_px[1], 10, 10)
+            arcade.draw_rect_filled(arect, arcade.color.GREEN)
+        if self.show_ui:
+            self.coordinate_text.draw()
+            self.threshold_text.draw()
+            self.downsample_text.draw()
+            self.sampled_points_text.draw()
+            self.alpha_text.draw()
+            self.keybind_text.draw()
 
 def main() -> None:
     win = TestWindow()

@@ -29,6 +29,7 @@ class TestWindow(arcade.Window):
     def __init__(self) -> None:
         super().__init__()
         self.cam = cv2.VideoCapture(0)
+        print(self.cam.get(cv2.CAP_PROP_FPS))
         self.cam_name = "USB Video Device"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)
 
         self.spritelist = arcade.SpriteList()
@@ -48,6 +49,7 @@ class TestWindow(arcade.Window):
         self.show_cloud = False
         self.show_shape = False
         self.show_lightness = False
+        self.show_target = False
         self.show_ui = True
         self.do_flip = True
 
@@ -64,8 +66,8 @@ class TestWindow(arcade.Window):
         self.camera_alpha = 255
         self.timeout = 1.0
         self.frequency = 2.0
-        self.dampening = 1.0
-        self.response = 1.0
+        self.dampening = 1.8
+        self.response = -0.5
 
         self.threshold_text = arcade.Text(f"Threshold: {self.threshold}", self.width - 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.downsample_text = arcade.Text(f"Downsample: {self.downsample}x", self.width - 5, self.threshold_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
@@ -78,6 +80,8 @@ class TestWindow(arcade.Window):
         self.keybind_text = arcade.Text("[Z] Show Shape [X] Show Cloud [C] Show Crunchy [V] Show Video [B] Show Lightness [<] Show Point [>] Show Smooth Point [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
 
         self.animator = SecondOrderAnimatorKClamped(self.frequency, self.dampening, self.response, Vec2(0, 0), Vec2(0, 0), 0)
+
+        self.target = self.rect.scale(0.25)
 
     def refresh_animator(self):
         self.animator = SecondOrderAnimatorKClamped(self.frequency, self.dampening, self.response, Vec2(*self.brightest_px) if self.brightest_px else Vec2(0, 0), Vec2(*self.brightest_px) if self.brightest_px else Vec2(0, 0), 0)
@@ -152,6 +156,8 @@ class TestWindow(arcade.Window):
             self.show_ui = not self.show_ui
         elif symbol == arcade.key.F:
             self.do_flip = not self.do_flip
+        elif symbol == arcade.key.T:
+            self.show_target = not self.show_target
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
         point = (x, y)
@@ -252,6 +258,11 @@ class TestWindow(arcade.Window):
         if self.animated_px and self.show_smooth_point:
             arect = arcade.XYWH(self.animated_px[0], self.animated_px[1], 10, 10)
             arcade.draw_rect_filled(arect, arcade.color.GREEN)
+        if self.show_target:
+            if self.animated_px in self.target:
+                arcade.draw_rect_filled(self.target, arcade.color.GREEN.replace(a = 128))
+            else:
+                arcade.draw_rect_filled(self.target, arcade.color.RED.replace(a = 128))
         if self.show_ui:
             self.coordinate_text.draw()
             self.threshold_text.draw()

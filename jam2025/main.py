@@ -7,7 +7,8 @@ import os
 import threading
 from arcade import Vec2
 
-from jam2025.procedural_animator import SecondOrderAnimatorKClamped
+from .webcam import WebCam
+from .procedural_animator import SecondOrderAnimatorKClamped
 
 def rgb_to_l(r: int, g: int, b: int) -> int:
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -30,19 +31,14 @@ class TestWindow(arcade.Window):
     DEFAULT_HEIGHT = 720
 
     def __init__(self) -> None:
-        self.cam = cv2.VideoCapture(0)
-        retrieved, first_frame = self.cam.read()
-        if not retrieved:
-            raise RuntimeError("Cannot read initial frame")
-        size = first_frame.shape
-        self.webcam_size = size[1], size[0]
-        self.webcam_center = self.webcam_size[0]/2, self.webcam_size[1]/2
-        super().__init__(*self.webcam_size, "Pass The Torch!") # TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT
+        self.webcam = WebCam()
+        self.webcam.connect()
+        super().__init__(*self.webcam.size, "Pass The Torch!") # TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT
         self.cam_name = "Logitech Webcam C930e"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)
 
         self.spritelist = arcade.SpriteList()
-        self.webcam_sprite = arcade.SpriteSolidColor(self.webcam_size[0], self.webcam_size[1], center_x = self.webcam_center[0], center_y = self.webcam_center[1])
-        self.crunchy_webcam_sprite = arcade.SpriteSolidColor(self.webcam_size[0], self.webcam_size[1], center_x = self.webcam_center[0], center_y = self.webcam_center[1])
+        self.webcam_sprite = arcade.SpriteSolidColor(self.webcam.size[0], self.webcam.size[1], center_x = self.webcam.size[0]/2, center_y =  self.webcam.size[1]/2)
+        self.crunchy_webcam_sprite = arcade.SpriteSolidColor(self.webcam.size[0], self.webcam.size[1], center_x = self.webcam.size[0]/2, center_y =  self.webcam.size[1]/2)
         self.spritelist.append(self.webcam_sprite)
         self.spritelist.append(self.crunchy_webcam_sprite)
 
@@ -50,8 +46,8 @@ class TestWindow(arcade.Window):
         self.coordinate_text = arcade.Text("No bright spot found!", 5, self.fps_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
         self.light_text = arcade.Text("000", 5, self.coordinate_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
 
-        self.display_camera = arcade.Camera2D(position=self.webcam_center, projection=arcade.XYWH(0, 0, self.webcam_size[0], self.webcam_size[1]))
-        self.display_camera.match_window(projection=False, aspect = self.webcam_size[0]/self.webcam_size[1])
+        self.display_camera = arcade.Camera2D(position=(self.webcam.size[0]/2,self.webcam.size[1]/2), projection=arcade.XYWH(0, 0, *self.webcam.size))
+        self.display_camera.match_window(projection=False, aspect = self.webcam.size[0]/self.webcam.size[1])
 
         self.show_crunchy = False
         self.show_video = True
@@ -64,6 +60,9 @@ class TestWindow(arcade.Window):
         self.show_ui = True
         self.do_flip = True
 
+        self.fetched_frame: np.ndarray = self.webcam.get_frame()
+        if self.fetched_frame is None:
+            return ValueError('No initial frame found')
         self.pixel_found = False
         self.brightest_px: tuple[int, int] | None = None
         self.animated_px: tuple[int, int] | None = None
@@ -98,14 +97,15 @@ class TestWindow(arcade.Window):
         self.animator = SecondOrderAnimatorKClamped(self.frequency, self.dampening, self.response, Vec2(*self.brightest_px) if self.brightest_px else Vec2(0, 0), Vec2(*self.brightest_px) if self.brightest_px else Vec2(0, 0), 0)
 
     def get_frame_data(self) -> np.ndarray | None:
-        retval, frame = self.cam.read()  # !: THIS is the slowest thing in the app, I think.
-        if not retval:
-            print("Can't read frame!")
+        frame = self.webcam.get_frame()
+        if frame is None:
+            frame = self.fetched_frame
         else:
-            frame = frame[:, :, ::-1]  # The camera data is BGR for some reason
-            if self.do_flip:
-                frame = np.fliplr(frame)
-            return frame
+            self.fetched_frame = frame
+        frame = frame[:, :, ::-1]  # The camera data is BGR for some reason
+        if self.do_flip:
+            frame = np.fliplr(frame)
+        return frame
 
     def frame_data_to_image(self, data: np.ndarray) -> Image.Image:
         return Image.fromarray(data, mode = "RGB")
@@ -149,7 +149,7 @@ class TestWindow(arcade.Window):
             return None
     
     def on_resize(self, width, height):
-        self.display_camera.match_window(projection=False, aspect = self.webcam_size[0]/self.webcam_size[1])
+        self.display_camera.match_window(projection=False, aspect = self.webcam.size[0]/self.webcam.size[1])
 
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.C:

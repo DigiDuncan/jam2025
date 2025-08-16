@@ -36,12 +36,13 @@ class TestWindow(arcade.Window):
             raise RuntimeError("Cannot read initial frame")
         size = first_frame.shape
         self.webcam_size = size[1], size[0]
-        super().__init__(TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT, "Pass The Torch!")
+        self.webcam_center = self.webcam_size[0]/2, self.webcam_size[1]/2
+        super().__init__(*self.webcam_size, "Pass The Torch!") # TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT
         self.cam_name = "Logitech Webcam C930e"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)
 
         self.spritelist = arcade.SpriteList()
-        self.webcam_sprite = arcade.SpriteSolidColor(self.width, self.height, center_x = self.center_x, center_y = self.center_y)
-        self.crunchy_webcam_sprite = arcade.SpriteSolidColor(self.width, self.height, center_x = self.center_x, center_y = self.center_y)
+        self.webcam_sprite = arcade.SpriteSolidColor(self.webcam_size[0], self.webcam_size[1], center_x = self.webcam_center[0], center_y = self.webcam_center[1])
+        self.crunchy_webcam_sprite = arcade.SpriteSolidColor(self.webcam_size[0], self.webcam_size[1], center_x = self.webcam_center[0], center_y = self.webcam_center[1])
         self.spritelist.append(self.webcam_sprite)
         self.spritelist.append(self.crunchy_webcam_sprite)
 
@@ -49,8 +50,8 @@ class TestWindow(arcade.Window):
         self.coordinate_text = arcade.Text("No bright spot found!", 5, self.fps_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
         self.light_text = arcade.Text("000", 5, self.coordinate_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
 
-        self.display_camera = arcade.Camera2D()
-        self.display_camera.match_window(aspect = self.webcam_size[0]/self.webcam_size[1])
+        self.display_camera = arcade.Camera2D(position=self.webcam_center, projection=arcade.XYWH(0, 0, self.webcam_size[0], self.webcam_size[1]))
+        self.display_camera.match_window(projection=False, aspect = self.webcam_size[0]/self.webcam_size[1])
 
         self.show_crunchy = False
         self.show_video = True
@@ -148,7 +149,9 @@ class TestWindow(arcade.Window):
             return None
     
     def on_resize(self, width, height):
-        self.display_camera.match_window(aspect = self.webcam_size[0]/self.webcam_size[1])
+        self.display_camera.match_window(projection=False, aspect = self.webcam_size[0]/self.webcam_size[1])
+        print(self.display_camera.viewport)
+        print(self.default_camera.viewport, print(width, height))
 
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.C:
@@ -257,39 +260,39 @@ class TestWindow(arcade.Window):
 
     def on_draw(self) -> None:
         self.clear(arcade.color.BLACK)
-        with self.display_camera.activate():
-            self.spritelist.draw()
+        # with self.display_camera.activate():
+        self.spritelist.draw()
+        if self.brightest_px:
+            if self.show_raw_point:
+                rect = arcade.XYWH(self.brightest_px[0], self.brightest_px[1], 10, 10)
+                arcade.draw_rect_filled(rect, arcade.color.RED)
+            if self.show_cloud or self.show_shape:
+                cloud = sorted([(x[0][0] * self.downsample, x[0][1] * self.downsample) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
+                if self.show_shape:
+                    arcade.draw_polygon_filled(cloud, arcade.color.BLUE.replace(a = 128))
+                if self.show_cloud:
+                    arcade.draw_points(cloud, arcade.color.BLUE, 3)
+        if self.animated_px and self.show_smooth_point:
+            arect = arcade.XYWH(self.animated_px[0], self.animated_px[1], 10, 10)
+            arcade.draw_rect_filled(arect, arcade.color.GREEN)
+        if self.show_target:
+            if self.animated_px in self.target:
+                arcade.draw_rect_filled(self.target, arcade.color.GREEN.replace(a = 128))
+            else:
+                arcade.draw_rect_filled(self.target, arcade.color.RED.replace(a = 128))
+        if self.show_ui:
             if self.brightest_px:
-                if self.show_raw_point:
-                    rect = arcade.XYWH(self.brightest_px[0], self.brightest_px[1], 10, 10)
-                    arcade.draw_rect_filled(rect, arcade.color.RED)
-                if self.show_cloud or self.show_shape:
-                    cloud = sorted([(x[0][0] * self.downsample, x[0][1] * self.downsample) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
-                    if self.show_shape:
-                        arcade.draw_polygon_filled(cloud, arcade.color.BLUE.replace(a = 128))
-                    if self.show_cloud:
-                        arcade.draw_points(cloud, arcade.color.BLUE, 3)
-                if self.show_ui:
-                    self.light_text.draw()
-            if self.animated_px and self.show_smooth_point:
-                arect = arcade.XYWH(self.animated_px[0], self.animated_px[1], 10, 10)
-                arcade.draw_rect_filled(arect, arcade.color.GREEN)
-            if self.show_target:
-                if self.animated_px in self.target:
-                    arcade.draw_rect_filled(self.target, arcade.color.GREEN.replace(a = 128))
-                else:
-                    arcade.draw_rect_filled(self.target, arcade.color.RED.replace(a = 128))
-            if self.show_ui:
-                self.coordinate_text.draw()
-                self.threshold_text.draw()
-                self.downsample_text.draw()
-                self.sampled_points_text.draw()
-                self.alpha_text.draw()
-                self.frequency_text.draw()
-                self.dampening_text.draw()
-                self.response_text.draw()
-                self.keybind_text.draw()
-            self.fps_text.draw()
+                self.light_text.draw()
+            self.coordinate_text.draw()
+            self.threshold_text.draw()
+            self.downsample_text.draw()
+            self.sampled_points_text.draw()
+            self.alpha_text.draw()
+            self.frequency_text.draw()
+            self.dampening_text.draw()
+            self.response_text.draw()
+            self.keybind_text.draw()
+        self.fps_text.draw()
 
 def main() -> None:
     win = TestWindow()

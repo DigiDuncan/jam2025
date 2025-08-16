@@ -31,7 +31,7 @@ class TestWindow(arcade.Window):
     DEFAULT_HEIGHT = 720
 
     def __init__(self) -> None:
-        self.webcam = WebCam()
+        self.webcam = WebCam(0)
         self.webcam.connect()
         super().__init__(*self.webcam.size, "Pass The Torch!") # TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT
         self.cam_name = "Logitech Webcam C930e"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)

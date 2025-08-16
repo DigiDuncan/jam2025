@@ -5,7 +5,8 @@ import numpy as np
 
 class WebCam:
     
-    def __init__(self):
+    def __init__(self, index: int = 0):
+        self._index: int = index
         self._webcam: cv2.VideoCapture | None = None
         self._webcam_size: tuple[int, int] | None = None
         self._webcam_fps: int | None = None
@@ -46,7 +47,7 @@ class WebCam:
 
     def _poll(self):
         with self._data_lock:
-            self._webcam = cv2.VideoCapture(0)
+            self._webcam = cv2.VideoCapture(self._index)
             retval, frame = self._webcam.read()
             while not retval:
                 retval, frame = self._webcam.read()
@@ -54,7 +55,6 @@ class WebCam:
             self._webcam_fps = self._webcam.get(cv2.CAP_PROP_FPS)
             self._webcam.set(cv2.CAP_PROP_EXPOSURE, -5)
             self._frames.put(frame)
-
         while True:
             retval, frame = self._webcam.read()
             if not retval:

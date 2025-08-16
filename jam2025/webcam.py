@@ -4,7 +4,7 @@ import threading
 import numpy as np
 
 class WebCam:
-    
+
     def __init__(self, index: int = 0):
         self._index: int = index
         self._webcam: cv2.VideoCapture | None = None
@@ -15,7 +15,7 @@ class WebCam:
         self._thread: threading.Thread = threading.Thread(target=self._poll, daemon=True)
         self._data_lock: threading.Lock = threading.Lock()
 
-    def connect(self):
+    def connect(self) -> None:
         self._thread.start()
 
     def get_frame(self) -> None:
@@ -25,27 +25,27 @@ class WebCam:
             frame = None
         finally:
             return frame
-        
+
     @property
     def size(self) -> tuple[int, int]:
         with self._data_lock:
             if self._webcam_size is None:
                 raise ValueError('Webcam is not connected')
             return self._webcam_size
-        
+
     @property
     def fps(self) -> int:
         with self._data_lock:
             if self._webcam_fps is None:
                 raise ValueError('Webcam is not connected')
             return self._webcam_fps
-        
+
     @property
     def connected(self) -> bool:
         with self._data_lock:
             return self._webcam is not None
 
-    def _poll(self):
+    def _poll(self) -> None:
         with self._data_lock:
             self._webcam = cv2.VideoCapture(self._index)
             retval, frame = self._webcam.read()

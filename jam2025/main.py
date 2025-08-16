@@ -1,6 +1,5 @@
 import math
 import arcade
-import cv2
 from PIL import Image
 import numpy as np
 import os
@@ -10,7 +9,9 @@ from arcade import Vec2
 from .webcam import WebCam
 from .procedural_animator import SecondOrderAnimatorKClamped
 
-def rgb_to_l(r: int, g: int, b: int) -> int:
+FPS = 240
+
+def rgb_to_l(r: int, g: int, b: int) -> float:
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 def get_polar_angle(x: float, y: float, center: tuple[float, float] = (0, 0)) -> float:
@@ -33,7 +34,7 @@ class TestWindow(arcade.Window):
     def __init__(self) -> None:
         self.webcam = WebCam(0)
         self.webcam.connect()
-        super().__init__(*self.webcam.size, "Pass The Torch!") # TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT
+        super().__init__(*self.webcam.size, "Pass The Torch!", update_rate = (1 / FPS)) # TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT
         self.cam_name = "Logitech Webcam C930e"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)
 
         self.spritelist = arcade.SpriteList()
@@ -62,7 +63,7 @@ class TestWindow(arcade.Window):
 
         self.fetched_frame: np.ndarray = self.webcam.get_frame()
         if self.fetched_frame is None:
-            return ValueError('No initial frame found')
+            raise ValueError('No initial frame found')
         self.pixel_found = False
         self.brightest_px: tuple[int, int] | None = None
         self.animated_px: tuple[int, int] | None = None
@@ -93,7 +94,7 @@ class TestWindow(arcade.Window):
 
         self.target = self.rect.scale(0.25)
 
-    def refresh_animator(self):
+    def refresh_animator(self) -> None:
         self.animator = SecondOrderAnimatorKClamped(self.frequency, self.dampening, self.response, Vec2(*self.brightest_px) if self.brightest_px else Vec2(0, 0), Vec2(*self.brightest_px) if self.brightest_px else Vec2(0, 0), 0)
 
     def get_frame_data(self) -> np.ndarray | None:
@@ -126,7 +127,7 @@ class TestWindow(arcade.Window):
         if frame is None:
             self.pixel_found = False
             return None
-        
+
         # Use numpy to quickly get shaped array of brightness
         brightness = rgb_to_l(frame[:, :, 0], frame[:, :, 1], frame[:, :, 2])
         # Get a numpy conditional mask (shaped array of 0s and 1s)
@@ -147,11 +148,11 @@ class TestWindow(arcade.Window):
         except Exception as _:                                                                   # coordinates from what you'd expect.
             self.pixel_found = False
             return None
-    
-    def on_resize(self, width, height):
+
+    def on_resize(self, width: int, height: int) -> None:
         self.display_camera.match_window(projection=False, aspect = self.webcam.size[0]/self.webcam.size[1])
 
-    def on_key_press(self, symbol: int, modifiers: int):
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.C:
             self.show_crunchy = not self.show_crunchy
         elif symbol == arcade.key.V:
@@ -176,7 +177,7 @@ class TestWindow(arcade.Window):
         elif symbol == arcade.key.T:
             self.show_target = not self.show_target
 
-    def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float):
+    def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
         point = (x, y)
         threshold_rect = text_to_rect(self.threshold_text)
         downsample_rect = text_to_rect(self.downsample_text)

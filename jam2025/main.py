@@ -10,7 +10,7 @@ from arcade import Vec2
 from jam2025.procedural_animator import SecondOrderAnimatorKClamped
 
 def rgb_to_l(r: int, g: int, b: int) -> int:
-    return int(0.2126 * r + 0.7152 * g + 0.0722 * b)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 def get_polar_angle(x: float, y: float, center: tuple[float, float] = (0, 0)) -> float:
     return math.atan2(y - center[1], x - center[0])
@@ -27,10 +27,15 @@ def open_settings(name: str = "USB Video Device") -> None:
 
 class TestWindow(arcade.Window):
     def __init__(self) -> None:
-        super().__init__()
         self.cam = cv2.VideoCapture(0)
+        retrieved, first_frame = self.cam.read()
+        if not retrieved:
+            raise RuntimeError("Cannot read initial frame")
+        size = first_frame.shape
+        print(first_frame.shape)
+        super().__init__(size[1], size[0], "Pass The Torch!")
         print(self.cam.get(cv2.CAP_PROP_FPS))
-        self.cam_name = "USB Video Device"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)
+        self.cam_name = "Logitech Webcam C930e"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)
 
         self.spritelist = arcade.SpriteList()
         self.webcam_sprite = arcade.SpriteSolidColor(self.width, self.height, center_x = self.center_x, center_y = self.center_y)
@@ -115,21 +120,24 @@ class TestWindow(arcade.Window):
         if frame is None:
             self.pixel_found = False
             return None
-        brightest_pixels = []
-        if frame is not None:
-            for y_coord, y in enumerate(frame):
-                for x_coord, rgb in enumerate(y):
-                    l = rgb_to_l(*rgb)
-                    if l >= threshold:
-                        brightest_pixels.append(((x_coord, frame.shape[0] - y_coord), l))
-        brightest_pixels.sort(key = lambda x: x[1], reverse = True)
+        
+        # Use numpy to quickly get shaped array of brightness
+        brightness = rgb_to_l(frame[:, :, 0], frame[:, :, 1], frame[:, :, 2])
+        # Get a numpy conditional mask (shaped array of 0s and 1s)
+        thresholded_values = brightness >= threshold
+        # Get array of x and y indices
+        bi = thresholded_values.nonzero()
+        # Create bright pixel list (Could use numpy to make this cleaner but that doesn't really matter)
+        brightest_pixels = [((x, frame.shape[0] - y), brightness[y, x]) for y, x in zip(bi[0], bi[1])]
+        brightest_pixels.sort(reverse=True, key = lambda x: x[1])
         self.cloud = brightest_pixels[:self.top_pixels]
         average_pos = np.mean(np.array([x[0] for x in self.cloud]), axis=0)
+        
         try:
             if brightest_pixels:
                 self.highest_l = brightest_pixels[0][1]
             self.pixel_found = True
-            return (int(average_pos[0] * downsample * 2), int(average_pos[1] * downsample * 2))  # I don't know why but you have to double the
+            return (int(average_pos[0] * downsample), int(average_pos[1] * downsample))  # I don't know why but you have to double the
         except Exception as _:                                                                   # coordinates from what you'd expect.
             self.pixel_found = False
             return None

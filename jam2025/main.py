@@ -150,8 +150,6 @@ class TestWindow(arcade.Window):
     
     def on_resize(self, width, height):
         self.display_camera.match_window(projection=False, aspect = self.webcam_size[0]/self.webcam_size[1])
-        print(self.display_camera.viewport)
-        print(self.default_camera.viewport, print(width, height))
 
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.C:

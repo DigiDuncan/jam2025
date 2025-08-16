@@ -1,0 +1,2 @@
+class WebCamController:
+    pass

@@ -26,15 +26,17 @@ def open_settings(name: str = "USB Video Device") -> None:
     os.system(f"ffmpeg -hide_banner -loglevel error -f dshow -show_video_device_dialog true -i video=\"{name}\"")
 
 class TestWindow(arcade.Window):
+    DEFAULT_WIDTH = 1280
+    DEFAULT_HEIGHT = 720
+
     def __init__(self) -> None:
         self.cam = cv2.VideoCapture(0)
         retrieved, first_frame = self.cam.read()
         if not retrieved:
             raise RuntimeError("Cannot read initial frame")
         size = first_frame.shape
-        print(first_frame.shape)
-        super().__init__(size[1], size[0], "Pass The Torch!")
-        print(self.cam.get(cv2.CAP_PROP_FPS))
+        self.webcam_size = size[1], size[0]
+        super().__init__(TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT, "Pass The Torch!")
         self.cam_name = "Logitech Webcam C930e"  # !: This is the name of my camera, replace it with yours! (Yes this sucks.)
 
         self.spritelist = arcade.SpriteList()
@@ -46,6 +48,9 @@ class TestWindow(arcade.Window):
         self.fps_text = arcade.Text("000.0 FPS", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
         self.coordinate_text = arcade.Text("No bright spot found!", 5, self.fps_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
         self.light_text = arcade.Text("000", 5, self.coordinate_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
+
+        self.display_camera = arcade.Camera2D()
+        self.display_camera.match_window(aspect = self.webcam_size[0]/self.webcam_size[1])
 
         self.show_crunchy = False
         self.show_video = True
@@ -132,7 +137,7 @@ class TestWindow(arcade.Window):
         brightest_pixels.sort(reverse=True, key = lambda x: x[1])
         self.cloud = brightest_pixels[:self.top_pixels]
         average_pos = np.mean(np.array([x[0] for x in self.cloud]), axis=0)
-        
+
         try:
             if brightest_pixels:
                 self.highest_l = brightest_pixels[0][1]
@@ -141,6 +146,9 @@ class TestWindow(arcade.Window):
         except Exception as _:                                                                   # coordinates from what you'd expect.
             self.pixel_found = False
             return None
+    
+    def on_resize(self, width, height):
+        self.display_camera.match_window(aspect = self.webcam_size[0]/self.webcam_size[1])
 
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.C:
@@ -249,39 +257,39 @@ class TestWindow(arcade.Window):
 
     def on_draw(self) -> None:
         self.clear(arcade.color.BLACK)
-        self.spritelist.draw()
-        if self.brightest_px:
-            if self.show_raw_point:
-                rect = arcade.XYWH(self.brightest_px[0], self.brightest_px[1], 10, 10)
-                arcade.draw_rect_filled(rect, arcade.color.RED)
-
-            if self.show_cloud or self.show_shape:
-                cloud = sorted([(x[0][0] * self.downsample, x[0][1] * self.downsample) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
-                if self.show_shape:
-                    arcade.draw_polygon_filled(cloud, arcade.color.BLUE.replace(a = 128))
-                if self.show_cloud:
-                    arcade.draw_points(cloud, arcade.color.BLUE, 3)
+        with self.display_camera.activate():
+            self.spritelist.draw()
+            if self.brightest_px:
+                if self.show_raw_point:
+                    rect = arcade.XYWH(self.brightest_px[0], self.brightest_px[1], 10, 10)
+                    arcade.draw_rect_filled(rect, arcade.color.RED)
+                if self.show_cloud or self.show_shape:
+                    cloud = sorted([(x[0][0] * self.downsample, x[0][1] * self.downsample) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
+                    if self.show_shape:
+                        arcade.draw_polygon_filled(cloud, arcade.color.BLUE.replace(a = 128))
+                    if self.show_cloud:
+                        arcade.draw_points(cloud, arcade.color.BLUE, 3)
+                if self.show_ui:
+                    self.light_text.draw()
+            if self.animated_px and self.show_smooth_point:
+                arect = arcade.XYWH(self.animated_px[0], self.animated_px[1], 10, 10)
+                arcade.draw_rect_filled(arect, arcade.color.GREEN)
+            if self.show_target:
+                if self.animated_px in self.target:
+                    arcade.draw_rect_filled(self.target, arcade.color.GREEN.replace(a = 128))
+                else:
+                    arcade.draw_rect_filled(self.target, arcade.color.RED.replace(a = 128))
             if self.show_ui:
-                self.light_text.draw()
-        if self.animated_px and self.show_smooth_point:
-            arect = arcade.XYWH(self.animated_px[0], self.animated_px[1], 10, 10)
-            arcade.draw_rect_filled(arect, arcade.color.GREEN)
-        if self.show_target:
-            if self.animated_px in self.target:
-                arcade.draw_rect_filled(self.target, arcade.color.GREEN.replace(a = 128))
-            else:
-                arcade.draw_rect_filled(self.target, arcade.color.RED.replace(a = 128))
-        if self.show_ui:
-            self.coordinate_text.draw()
-            self.threshold_text.draw()
-            self.downsample_text.draw()
-            self.sampled_points_text.draw()
-            self.alpha_text.draw()
-            self.frequency_text.draw()
-            self.dampening_text.draw()
-            self.response_text.draw()
-            self.keybind_text.draw()
-        self.fps_text.draw()
+                self.coordinate_text.draw()
+                self.threshold_text.draw()
+                self.downsample_text.draw()
+                self.sampled_points_text.draw()
+                self.alpha_text.draw()
+                self.frequency_text.draw()
+                self.dampening_text.draw()
+                self.response_text.draw()
+                self.keybind_text.draw()
+            self.fps_text.draw()
 
 def main() -> None:
     win = TestWindow()

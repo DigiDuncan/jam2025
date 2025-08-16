@@ -256,7 +256,7 @@ class TestWindow(arcade.Window):
                 arcade.draw_rect_filled(rect, arcade.color.RED)
 
             if self.show_cloud or self.show_shape:
-                cloud = sorted([(x[0][0] * self.downsample * 2, x[0][1] * self.downsample * 2) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
+                cloud = sorted([(x[0][0] * self.downsample, x[0][1] * self.downsample) for x in self.cloud], key = lambda x: get_polar_angle(x[0], x[1], self.brightest_px))
                 if self.show_shape:
                     arcade.draw_polygon_filled(cloud, arcade.color.BLUE.replace(a = 128))
                 if self.show_cloud:

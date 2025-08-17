@@ -18,10 +18,8 @@ class Webcam:
     CONNECTED: WebcamState = 2 # has found camera and has properties
     ERROR: WebcamState = 3 # Something broke relating to the webcam
 
-    # I'm unsure what cv2.CAP_DSHOW means, but it seems to speed up camera reading?
-    def __init__(self, index: int = 0, dshow: bool = True):
+    def __init__(self, index: int = 0):
         self._index: int = index
-        self._dshow: bool = dshow
         self._webcam: cv2.VideoCapture | None = None
 
         # Webcam properties that must be read through the data lock
@@ -93,8 +91,8 @@ class Webcam:
         with self._data_lock:
             force_disconnect = self._webcam_state != Webcam.DISCONNECTED
         if force_disconnect:
-            self._disconnect()
             print('Problem disconnecting webcam, probably encountered an error')
+            self._disconnect()
         print('reconnecting')
         self.connect(start_reading)
 
@@ -138,8 +136,7 @@ class Webcam:
         print('thread started')
         with self._data_lock:
             try:
-                idx = self._index + cv2.CAP_DSHOW if self._dshow else self._index
-                self._webcam = cv2.VideoCapture(idx)
+                self._webcam = cv2.VideoCapture(self._index, cv2.CAP_DSHOW)
                 if not self._webcam.isOpened():
                     raise ValueError('Cannot connect to webcam')
             except Exception as e:
@@ -192,13 +189,15 @@ class Webcam:
             try:
                 retval, frame = self._webcam.read()
             except Exception as e:
-                self._webcam_state = Webcam.ERROR
+                with self._data_lock:
+                    self._webcam_state = Webcam.ERROR
                 raise e
             
             if not retval:
                 # This should maybe set the Webcam state to Error.
-                self._frames.put(None)
-                print('Failed to read frame.')
+                with self._data_lock:
+                    self._webcam_state = Webcam.ERROR
+                raise ValueError('Failed to Read Frame (camera most likely disconnected).')
             else:
                 self._frames.put(frame)
         

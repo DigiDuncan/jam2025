@@ -46,6 +46,8 @@ class Webcam:
 
     def disconnect(self, block: bool = False):
         with self._data_lock:
+            if self._webcam is None:
+                return
             print('set disconnect')
             self._webcam_disconnect = True
         if block:

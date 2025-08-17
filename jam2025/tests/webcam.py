@@ -39,6 +39,11 @@ class WebcamTestWindow(arcade.Window):
 
         self.target = self.rect.scale(0.25)
 
+    def on_close(self) -> None:
+        self.webcam.webcam.disconnect(block=True)
+        super().on_close()
+        print('closing')
+
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.S:
             open_settings(self.webcam.name)

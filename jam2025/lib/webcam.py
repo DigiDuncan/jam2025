@@ -11,19 +11,69 @@ from PIL import Image
 from jam2025.lib.procedural_animator import SecondOrderAnimatorKClamped
 from jam2025.lib.utils import frame_data_to_image, rgb_to_l
 
+type WebcamState = int
 class Webcam:
-    def __init__(self, index: int = 0):
+    DISCONNECTED: WebcamState = 0 # thread has not started
+    CONNECTING: WebcamState = 1 # has found camera but hasn't gotten first frame
+    CONNECTED: WebcamState = 2 # has found camera and has properties
+    ERROR: WebcamState = 3 # Something broke relating to the webcam
+
+    # I'm unsure what cv2.CAP_DSHOW means, but it seems to speed up camera reading?
+    def __init__(self, index: int = 0, dshow: bool = True):
         self._index: int = index
+        self._dshow: bool = dshow
         self._webcam: cv2.VideoCapture | None = None
+
+        # Webcam properties that must be read through the data lock
         self._webcam_size: tuple[int, int] | None = None
         self._webcam_fps: int | None = None
+        self._webcam_state: WebcamState = Webcam.DISCONNECTED
+        self._webcam_read: bool = False
+        self._webcam_disconnect: bool = False
 
         self._frames: queue.Queue[np.ndarray | None] = queue.Queue()
         self._thread: threading.Thread = threading.Thread(target=self._poll, daemon=True)
+    
+        # The data lock prevents race conditions by blocking until the thread
+        # releases it.
         self._data_lock: threading.Lock = threading.Lock()
 
-    def connect(self) -> None:
+    def connect(self, start_reading: bool = False) -> None:
+        self._webcam_read = start_reading
         self._thread.start()
+
+    def disconnect(self, block: bool = False):
+        with self._data_lock:
+            self._webcam_disconnect = True
+        if block:
+            # Block the disconnect thread until the disconnect msg has been recieved.
+            # This might be unsafe as there is no timeout, but it's only unsafe
+            # If I have fucked up.
+            self._thread.join()
+
+    def _disconnect(self):
+        # This is also run in the thread if we have to wait to disconnect
+        # so this has to be a seperate call.
+
+        with self._data_lock:
+            self._webcam_size = None
+            self._webcam_fps = None
+            self._webcam_state = Webcam.DISCONNECTED
+            self._webcam_read = False
+            self._webcam_disconnect = False
+
+            # Reset the queue and make sure no thread is trying to get from it
+            # when it shouldn't.
+            self._frames.shutdown(True)
+            self._frames = queue.Queue()
+
+            # Dereference the thread and make a new one. I think this is memory safe?
+            # This has to be done like this because there is not 'thread ended' callback.
+            self._thread = threading.Thread(target=self._poll, daemon=True)
+
+    def set_read(self, read: bool):
+        with self._data_lock:
+            self._webcam_read = True
 
     def get_frame(self) -> None:
         try:
@@ -32,6 +82,11 @@ class Webcam:
             frame = None
         finally:
             return frame
+        
+    @property
+    def state(self) -> WebcamState:
+        with self._data_lock:
+            return self._webcam_state
 
     @property
     def size(self) -> tuple[int, int]:
@@ -50,30 +105,80 @@ class Webcam:
     @property
     def connected(self) -> bool:
         with self._data_lock:
-            return self._webcam is not None
+            return self._webcam_state == Webcam.CONNECTED
 
     def _poll(self) -> None:
         with self._data_lock:
-            self._webcam = cv2.VideoCapture(self._index)
-            retval, frame = self._webcam.read()
-            while not retval:
+            try:
+                idx = self._index + cv2.CAP_DSHOW if self._dshow else self._index
+                self._webcam = cv2.VideoCapture(idx)
+            except Exception as e:
+                self._webcam_state = Webcam.ERROR
+                raise e
+    
+        with self._data_lock:
+            immediate_disconnect = self._webcam_disconnect
+        # We have to exit the data lock to disconnect because it locks internally
+        # and if the thread is already holding the lock it will brick.
+        if immediate_disconnect:
+            self._disconnect()
+            return
+        
+        with self._data_lock:
+            try:
                 retval, frame = self._webcam.read()
-            self._webcam_size = frame.shape[1], frame.shape[0]
-            self._webcam_fps = self._webcam.get(cv2.CAP_PROP_FPS)
-            self._webcam.set(cv2.CAP_PROP_EXPOSURE, -5)
-            self._frames.put(frame)
+                while not retval:
+                    retval, frame = self._webcam.read()
+                self._webcam_size = frame.shape[1], frame.shape[0]
+                self._webcam_fps = self._webcam.get(cv2.CAP_PROP_FPS)
+                if self._webcam_read:
+                    self._frames.put(frame)
+            except Exception as e:
+                self._webcam_state = Webcam.ERROR
+                raise e
+            else:
+                self._webcam_state = Webcam.CONNECTED
+        
+        if self._webcam_state == Webcam.ERROR:
+            return
+
         while True:
-            retval, frame = self._webcam.read()
+            # Could maybe be done with a threading.event but this is fine for now
+            with self._data_lock:
+                read = self._webcam_read
+                disconnect = self._webcam_disconnect
+
+            if not read:
+                continue # This will give faster responses than reading and not sending.
+            if disconnect:
+                # If we wanted to be really safe we would disconnect even when the window close
+                break
+
+            try:
+                retval, frame = self._webcam.read()
+            except Exception as e:
+                self._webcam_state = Webcam.ERROR
+                raise e
+            
             if not retval:
+                # This should maybe set the Webcam state to Error.
                 self._frames.put(None)
                 print('Failed to read frame.')
-            self._frames.put(frame)
+            else:
+                self._frames.put(frame)
+        
+        self._disconnect()
 
 
 class WebcamController:
     def __init__(self, index: int = 0, scaling: int = 1) -> None:
         self.webcam = Webcam(index)
-        self.webcam.connect()
+        self.webcam.connect(start_reading=True)
+
+        # Cludge to block until the webcam is active. I will remove later
+        while True:
+            if self.webcam.connected:
+                break
 
         self.name = "USB Video Device"
         self.scaling = scaling

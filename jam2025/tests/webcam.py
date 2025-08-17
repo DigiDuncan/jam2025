@@ -10,7 +10,7 @@ class WebcamTestWindow(arcade.Window):
     DEFAULT_HEIGHT = 720
 
     def __init__(self) -> None:
-        self.webcam = WebcamController()
+        self.webcam = WebcamController(scaling = 2)
 
         super().__init__(*self.webcam.size, "Pass The Torch!", update_rate = (1 / FPS)) # TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT
 
@@ -35,16 +35,27 @@ class WebcamTestWindow(arcade.Window):
         self.frequency_text = arcade.Text(f"Frequency: {self.webcam.frequency:.1f}", self.width - 5, self.sampled_points_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.dampening_text = arcade.Text(f"Dampening: {self.webcam.dampening:.1f}", self.width - 5, self.frequency_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.response_text = arcade.Text(f"Response: {self.webcam.response:.1f}", self.width - 5, self.dampening_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
-        self.keybind_text = arcade.Text("[Z] Show Shape [X] Show Cloud [C] Show Crunchy [V] Show Video [B] Show Lightness [<] Show Point [>] Show Smooth Point [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
+        self.keybind_text = arcade.Text("[C] Show Cloud [V] Show Video [B] Show Lightness [<] Show Point [>] Show Smooth Point [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
 
         self.target = self.rect.scale(0.25)
-
-    def on_resize(self, width: int, height: int) -> None:
-        self.display_camera.match_window(projection=False, aspect = self.webcam.size[0]/self.webcam.size[1])
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.S:
             open_settings(self.webcam.name)
+        elif symbol == arcade.key.V:
+            self.show_video = not self.show_video
+        elif symbol == arcade.key.C:
+            self.show_cloud = not self.show_cloud
+        elif symbol == arcade.key.B:
+            self.webcam.show_lightness = not self.webcam.show_lightness
+        elif symbol == arcade.key.COMMA:
+            self.show_raw_point = not self.show_raw_point
+        elif symbol == arcade.key.PERIOD:
+            self.show_smooth_point = not self.show_smooth_point
+        elif symbol == arcade.key.F:
+            self.webcam.flip = not self.webcam.flip
+        elif symbol == arcade.key.U:
+            self.show_ui = not self.show_ui
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
         point = (x, y)
@@ -91,8 +102,8 @@ class WebcamTestWindow(arcade.Window):
 
     def on_draw(self) -> None:
         self.clear(arcade.color.BLACK)
-        # with self.display_camera.activate():
-        self.spritelist.draw()
+        if self.show_video:
+            self.spritelist.draw()
         if self.webcam.raw_cursor:
             if self.show_raw_point:
                 rect = arcade.XYWH(self.webcam.raw_cursor[0], self.webcam.raw_cursor[1], 10, 10)

@@ -71,14 +71,15 @@ class Webcam:
 
 
 class WebcamController:
-    def __init__(self, index: int = 0) -> None:
+    def __init__(self, index: int = 0, scaling: int = 1) -> None:
         self.webcam = Webcam(index)
         self.webcam.connect()
 
         self.name = "USB Video Device"
+        self.scaling = scaling
 
-        self.sprite = arcade.SpriteSolidColor(self.webcam.size[0], self.webcam.size[1], center_x = self.webcam.size[0]/2, center_y =  self.webcam.size[1]/2)
-        self.crunchy_sprite = arcade.SpriteSolidColor(self.webcam.size[0], self.webcam.size[1], center_x = self.webcam.size[0]/2, center_y =  self.webcam.size[1]/2)
+        self.sprite = arcade.SpriteSolidColor(self.size[0], self.size[1], center_x = self.size[0]/2, center_y =  self.size[1]/2)
+        self.crunchy_sprite = arcade.SpriteSolidColor(self.size[0], self.size[1], center_x = self.size[0]/2, center_y =  self.size[1]/2)
 
         self._fetched_frame: np.ndarray | None = self.webcam.get_frame()
         if self._fetched_frame is None:
@@ -91,14 +92,13 @@ class WebcamController:
         self._no_pixel_time = 0.0
 
         self._threshold = 245
-        self._downsample = 8
-        self._top_pixels = 10
+        self._downsample = 4
+        self._top_pixels = 50
         self._frequency = 2.0
         self._dampening = 1.8
         self._response = -0.5
 
         self.timeout = 1.0
-        self.scaling = 1
 
         self.flip = False
         self.show_lightness = False
@@ -137,7 +137,7 @@ class WebcamController:
     @frequency.setter
     def frequency(self, v: float) -> None:
         self._frequency = v
-        self.refresh_animator()
+        self._refresh_animator()
 
     @property
     def dampening(self) -> float: return self._dampening
@@ -145,7 +145,7 @@ class WebcamController:
     @dampening.setter
     def dampening(self, v: float) -> None:
         self._dampening = v
-        self.refresh_animator()
+        self._refresh_animator()
 
     @property
     def response(self) -> float: return self._response
@@ -153,12 +153,12 @@ class WebcamController:
     @response.setter
     def response(self, v: float) -> None:
         self._response = v
-        self.refresh_animator()
+        self._refresh_animator()
 
-    def refresh_animator(self) -> None:
+    def _refresh_animator(self) -> None:
         self.animator = SecondOrderAnimatorKClamped(self._frequency, self._dampening, self._response, Vec2(*self._raw_cursor) if self._raw_cursor else Vec2(0, 0), Vec2(*self._raw_cursor) if self._raw_cursor else Vec2(0, 0), 0)
 
-    def get_frame_data(self) -> np.ndarray | None:
+    def _get_frame_data(self) -> np.ndarray | None:
         frame = self.webcam.get_frame()
         if frame is None:
             frame = self._fetched_frame
@@ -169,8 +169,8 @@ class WebcamController:
             frame = np.fliplr(frame)
         return frame
 
-    def read_frame(self, downsample: int = 1) -> Image.Image | None:
-        frame = self.get_frame_data()
+    def _read_frame(self, downsample: int = 1) -> Image.Image | None:
+        frame = self._get_frame_data()
         if frame is not None and downsample != 1:
             frame = frame[::downsample, ::downsample]
         if frame is not None:
@@ -179,7 +179,7 @@ class WebcamController:
 
     def get_brightest_pixel(self, threshold: int = 230, downsample: int = 8) -> tuple[int, int] | None:
         """You'd think this is the most expensive function, but it's not!"""
-        frame = self.get_frame_data()
+        frame = self._get_frame_data()
         if frame is not None and downsample != 1:
             frame = frame[::downsample, ::downsample]
         if frame is None:
@@ -208,7 +208,7 @@ class WebcamController:
             return None
 
     def update(self, delta_time: float) -> None:
-        frame_data = self.get_frame_data()
+        frame_data = self._get_frame_data()
         frame = frame_data_to_image(frame_data) if frame_data is not None else None
         crunchy_frame = frame_data_to_image(frame_data[::self._downsample, ::self._downsample]) if frame_data is not None else None
 
@@ -228,7 +228,7 @@ class WebcamController:
             self.crunchy_sprite.size = self.size
         self._raw_cursor = self.get_brightest_pixel(self._threshold, self._downsample)
         if self._cursor is None and self._raw_cursor:
-            self.refresh_animator()
+            self._refresh_animator()
         if self._raw_cursor:
             self._no_pixel_time = 0.0
             self._cursor = self.animator.update(delta_time, Vec2(*self._raw_cursor))

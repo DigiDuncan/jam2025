@@ -3,3 +3,4 @@ jam2025/__pycache__/
 .libs/
 build/
 *.egg-info/
+*.pyc

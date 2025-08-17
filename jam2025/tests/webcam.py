@@ -56,6 +56,8 @@ class WebcamTestWindow(arcade.Window):
             self.webcam.flip = not self.webcam.flip
         elif symbol == arcade.key.U:
             self.show_ui = not self.show_ui
+        elif symbol == arcade.key.R:
+            self.webcam.webcam.reconnect(True)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
         point = (x, y)

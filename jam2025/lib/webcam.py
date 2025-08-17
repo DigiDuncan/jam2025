@@ -39,26 +39,36 @@ class Webcam:
         self._data_lock: threading.Lock = threading.Lock()
 
     def connect(self, start_reading: bool = False) -> None:
+        with self._data_lock:
+            invalid_connection = self._webcam_state != self.DISCONNECTED
+        if invalid_connection:
+            raise ValueError('Webcam has already been connected, call disconnect first.')
         self._webcam_read = start_reading
         self._thread.start()
 
     def disconnect(self, block: bool = False):
         with self._data_lock:
+            print('set disconnect')
             self._webcam_disconnect = True
         if block:
+            print('started blocking')
             # Block the disconnect thread until the disconnect msg has been recieved.
             # This might be unsafe as there is no timeout, but it's only unsafe
             # If I have fucked up.
             self._thread.join()
+            print('finished blocking')
 
     def _disconnect(self):
         # This is also run in the thread if we have to wait to disconnect
         # so this has to be a seperate call.
-
+        print('disconnecting')
         with self._data_lock:
+            if self._webcam is not None:
+                self._webcam.release()
+            self._webcam = None
+
             self._webcam_size = None
             self._webcam_fps = None
-            self._webcam_state = Webcam.DISCONNECTED
             self._webcam_read = False
             self._webcam_disconnect = False
 
@@ -70,6 +80,23 @@ class Webcam:
             # Dereference the thread and make a new one. I think this is memory safe?
             # This has to be done like this because there is not 'thread ended' callback.
             self._thread = threading.Thread(target=self._poll, daemon=True)
+
+            # This happens last as a safety check. We can't start a thread that
+            # has already been started, even if it's dead.
+            self._webcam_state: WebcamState = Webcam.DISCONNECTED
+        print('finished disconnecting')
+        
+
+    def reconnect(self, start_reading: bool = False):
+        # Disconnect the camera, and block until that is done, then reconnect.
+        self.disconnect(block=True)
+        with self._data_lock:
+            force_disconnect = self._webcam_state != Webcam.DISCONNECTED
+        if force_disconnect:
+            self._disconnect()
+            print('Problem disconnecting webcam, probably encountered an error')
+        print('reconnecting')
+        self.connect(start_reading)
 
     def set_read(self, read: bool):
         with self._data_lock:
@@ -108,19 +135,24 @@ class Webcam:
             return self._webcam_state == Webcam.CONNECTED
 
     def _poll(self) -> None:
+        print('thread started')
         with self._data_lock:
             try:
                 idx = self._index + cv2.CAP_DSHOW if self._dshow else self._index
                 self._webcam = cv2.VideoCapture(idx)
+                if not self._webcam.isOpened():
+                    raise ValueError('Cannot connect to webcam')
             except Exception as e:
                 self._webcam_state = Webcam.ERROR
                 raise e
+            print('connected to webcam')
     
+        # We have to exit the data lock to disconnect because it locks internally
+        # and if the thread is already holding the lock it will brick. 
         with self._data_lock:
             immediate_disconnect = self._webcam_disconnect
-        # We have to exit the data lock to disconnect because it locks internally
-        # and if the thread is already holding the lock it will brick.
         if immediate_disconnect:
+            print('connecting interupted')
             self._disconnect()
             return
         
@@ -138,8 +170,10 @@ class Webcam:
                 raise e
             else:
                 self._webcam_state = Webcam.CONNECTED
+            print('finished connecting')
         
         if self._webcam_state == Webcam.ERROR:
+            # This shouldn't really be possible.
             return
 
         while True:
@@ -151,6 +185,7 @@ class Webcam:
             if not read:
                 continue # This will give faster responses than reading and not sending.
             if disconnect:
+                print('disconnect found in loop')
                 # If we wanted to be really safe we would disconnect even when the window close
                 break
 
@@ -183,8 +218,10 @@ class WebcamController:
         self.name = "USB Video Device"
         self.scaling = scaling
 
-        self.sprite = arcade.SpriteSolidColor(self.size[0], self.size[1], center_x = self.size[0]/2, center_y =  self.size[1]/2)
-        self.crunchy_sprite = arcade.SpriteSolidColor(self.size[0], self.size[1], center_x = self.size[0]/2, center_y =  self.size[1]/2)
+        size = self.size
+        center = size / 2.0
+        self.sprite = arcade.SpriteSolidColor(*size, *center)
+        self.crunchy_sprite = arcade.SpriteSolidColor(*size, *center)
 
         self._fetched_frame: np.ndarray | None = self.webcam.get_frame()
         if self._fetched_frame is None:
@@ -212,6 +249,8 @@ class WebcamController:
 
     @property
     def size(self) -> Vec2:
+        if not self.webcam.connected:
+            return Vec2(1, 1)
         return Vec2(*self.webcam.size) * self.scaling
 
     @property

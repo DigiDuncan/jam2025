@@ -4,6 +4,8 @@ import arcade
 from arcade.math import get_distance
 from arcade.types import Color, Point2
 
+from jam2025.lib.anim import ease_linear, perc
+
 def nothing(*args: Any) -> None:
     ...
 
@@ -13,7 +15,7 @@ def point_in_circle(center: Point2, radius: float, point: Point2) -> bool:
 
 class Button:
     def __init__(self, x: int, y: int, size: int, thickness: int, hold_time: float = 1.5, cooldown_time: float = 1.0,
-                 back_color: Color = arcade.color.GRAY, front_color: Color = arcade.color.WHITE, active_color: Color = arcade.color.GREEN,
+                 back_color: Color = arcade.color.GRAY, front_color: Color = arcade.color.RED, active_color: Color = arcade.color.GREEN,
                  callback: Callable = nothing, callback_args: tuple = ()) -> None:
         self.x = x
         self.y = y
@@ -27,6 +29,8 @@ class Button:
         self.callback = callback
         self.callback_args = callback_args
 
+        self.disabled = False
+
         self.current_hold_time = 0.0
         self.fired = False
         self.left = True
@@ -38,7 +42,7 @@ class Button:
 
     def update(self, delta_time: float, cursor: Point2) -> None:
         pic = point_in_circle((self.x, self.y), self.size / 2, cursor)
-        if pic and not self.fired and self.left:
+        if pic and not self.fired and self.left and not self.disabled:
             self.current_hold_time += delta_time
         if self.current_hold_time >= self.hold_time and not self.fired:
             self.callback(*self.callback_args)
@@ -57,8 +61,13 @@ class Button:
             self.fired = False
 
     def draw(self) -> None:
-        if not self.fired:
+        if not self.fired and not self.disabled:
             arcade.draw_circle_outline(self.x, self.y, self.size / 2, self.back_color, self.thickness)
-            arcade.draw_arc_outline(self.x, self.y, self.size, self.size, self.front_color, 0, self.hold_percentange * 360, self.thickness)
-        if self.fired:
-            arcade.draw_circle_outline(self.x, self.y, self.size / 2, self.active_color, self.thickness)
+            portion = self.hold_percentange * 360
+            arcade.draw_arc_outline(self.x, self.y, self.size, self.size, self.front_color, 0, portion, self.thickness * 2, tilt_angle = -90 + portion)
+        elif self.fired:
+            arcade.draw_circle_outline(self.x, self.y, self.size / 2, self.back_color.replace(a = 128 if self.disabled else 255), self.thickness)
+            alpha = int(ease_linear(255, 0, perc(self.cooldown_time / 2, self.cooldown_time, self.cooldown)))
+            arcade.draw_circle_outline(self.x, self.y, self.size / 2, self.active_color.replace(a = alpha), self.thickness)
+        else:
+            arcade.draw_circle_outline(self.x, self.y, self.size / 2, self.back_color.replace(a = 128), self.thickness)

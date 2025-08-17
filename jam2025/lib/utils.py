@@ -6,6 +6,12 @@ import arcade
 from PIL import Image
 import numpy as np
 
+def clamp[T](min_val: T, val: T, mav_val: T) -> T:
+    """Clamp a `val` to be no lower than `minVal`, and no higher than `maxVal`."""
+    return max(min_val, min(mav_val, val))
+
+def snap(n: float, increments: int) -> float:
+    return round(increments * n) / increments
 
 def rgb_to_l(r: int, g: int, b: int) -> float:
     return 0.2126 * r + 0.7152 * g + 0.0722 * b

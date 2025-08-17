@@ -47,8 +47,10 @@ class Textbox:
 
     def update(self, delta_time: float) -> None:
         chars_since = math.floor(GLOBAL_CLOCK.time_since(self._last_queue_time) * self.cps) if self.cps else sys.maxsize
-        if self._queued_message:
+        if self._queued_message is not None:
             self.text.text = self._queued_message[:chars_since]
+        else:
+            self.text.text = ""
 
     def draw(self) -> None:
         if self.background:

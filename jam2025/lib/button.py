@@ -47,16 +47,17 @@ class Button:
         if self.current_hold_time >= self.hold_time and not self.fired:
             self.callback(*self.callback_args)
             self.fired = True
+            self.current_hold_time = 0.0
             self.left = False
         if pic and self.fired:
             self.cooldown += delta_time
         if self.cooldown >= self.cooldown_time:
             self.fired = False
-            self.current_hold_time = 0.0
             self.cooldown = 0.0
         if not pic:
             self.left = True
-            self.current_hold_time = 0.0
+            self.current_hold_time -= delta_time * 2
+            self.current_hold_time = max(0, self.current_hold_time)
         if not pic and self.fired:
             self.fired = False
 
@@ -64,7 +65,7 @@ class Button:
         if not self.fired and not self.disabled:
             arcade.draw_circle_outline(self.x, self.y, self.size / 2, self.back_color, self.thickness)
             portion = self.hold_percentange * 360
-            arcade.draw_arc_outline(self.x, self.y, self.size, self.size, self.front_color, 0, portion, self.thickness * 2, tilt_angle = -90 + portion)
+            arcade.draw_arc_outline(self.x, self.y, self.size - self.thickness, self.size - self.thickness, self.front_color, 0, portion, self.thickness * 2, tilt_angle = -90 + portion)
         elif self.fired:
             arcade.draw_circle_outline(self.x, self.y, self.size / 2, self.back_color.replace(a = 128 if self.disabled else 255), self.thickness)
             alpha = int(ease_linear(255, 0, perc(self.cooldown_time / 2, self.cooldown_time, self.cooldown)))

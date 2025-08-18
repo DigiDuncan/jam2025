@@ -175,7 +175,8 @@ class Webcam:
                 continue # This will give faster responses than reading and not sending.
             if disconnect:
                 print('disconnect found in loop')
-                # If we wanted to be really safe we would disconnect even when the window close
+                # If we wanted to be really safe we would disconnect even when the window closed
+                # through an error
                 break
 
             try:

@@ -109,7 +109,7 @@ class Webcam:
             frame = None
         finally:
             return frame
-        
+
     @property
     def state(self) -> WebcamState:
         with self._data_lock:
@@ -138,14 +138,14 @@ class Webcam:
         print('thread started')
         with self._data_lock:
             try:
-                self._webcam = cv2.VideoCapture(self._index, cv2.CAP_DSHOW)
+                self._webcam = cv2.VideoCapture(self._index)
                 if not self._webcam.isOpened():
                     raise ValueError('Cannot connect to webcam')
             except Exception as e:
                 self._webcam_state = Webcam.ERROR
                 raise e
             print('connected to webcam')
-    
+
         # We have to exit the data lock to disconnect because it locks internally
         # and if the thread is already holding the lock it will brick. 
         with self._data_lock:
@@ -154,7 +154,7 @@ class Webcam:
             print('connecting interupted')
             self._disconnect()
             return
-        
+
         with self._data_lock:
             try:
                 retval, frame = self._webcam.read()

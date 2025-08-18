@@ -1,5 +1,6 @@
 import arcade
 
+from jam2025.lib.button import Button
 from jam2025.lib.utils import open_settings, text_to_rect
 from jam2025.lib.webcam import WebcamController
 
@@ -16,10 +17,11 @@ class WebcamTestWindow(arcade.Window):
 
         self.spritelist = arcade.SpriteList()
         self.spritelist.append(self.webcam.sprite)
+        self.button = Button(self.center_x, self.height / 4, 40, 6)
 
         self.show_crunchy = False
         self.show_video = True
-        self.show_raw_point = True
+        self.show_raw_point = False
         self.show_smooth_point = True
         self.show_cloud = False
         self.show_target = False
@@ -35,9 +37,7 @@ class WebcamTestWindow(arcade.Window):
         self.frequency_text = arcade.Text(f"Frequency: {self.webcam.frequency:.1f}", self.width - 5, self.sampled_points_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.dampening_text = arcade.Text(f"Dampening: {self.webcam.dampening:.1f}", self.width - 5, self.frequency_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
         self.response_text = arcade.Text(f"Response: {self.webcam.response:.1f}", self.width - 5, self.dampening_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "right", align = "right")
-        self.keybind_text = arcade.Text("[C] Show Cloud [V] Show Video [B] Show Lightness [<] Show Point [>] Show Smooth Point [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
-
-        self.target = self.rect.scale(0.25)
+        self.keybind_text = arcade.Text("[C] Show Cloud [V] Show Video [B] Show Lightness [T] Show Target [<] Show Point [>] Show Smooth Point [F] Flip [U] Close UI", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", anchor_x = "left")
 
     def on_close(self) -> None:
         self.webcam.webcam.disconnect(block=True)
@@ -63,6 +63,8 @@ class WebcamTestWindow(arcade.Window):
             self.show_ui = not self.show_ui
         elif symbol == arcade.key.R:
             self.webcam.webcam.reconnect(True)
+        elif symbol == arcade.key.T:
+            self.show_target = not self.show_target
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
         point = (x, y)
@@ -91,6 +93,7 @@ class WebcamTestWindow(arcade.Window):
 
     def on_update(self, delta_time: float) -> None:
         self.webcam.update(delta_time)
+        self.button.update(delta_time, self.webcam.cursor)
         self.update_ui(delta_time)
 
     def update_ui(self, delta_time: float) -> None:
@@ -122,10 +125,7 @@ class WebcamTestWindow(arcade.Window):
             arect = arcade.XYWH(self.webcam.cursor[0], self.webcam.cursor[1], 10, 10)
             arcade.draw_rect_filled(arect, arcade.color.GREEN)
         if self.show_target:
-            if self.webcam.cursor in self.target:
-                arcade.draw_rect_filled(self.target, arcade.color.GREEN.replace(a = 128))
-            else:
-                arcade.draw_rect_filled(self.target, arcade.color.RED.replace(a = 128))
+            self.button.draw()
         if self.show_ui:
             if self.webcam.raw_cursor:
                 self.light_text.draw()

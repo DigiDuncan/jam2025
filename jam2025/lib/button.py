@@ -40,8 +40,8 @@ class Button:
     def hold_percentange(self) -> float:
         return self.current_hold_time / self.hold_time
 
-    def update(self, delta_time: float, cursor: Point2) -> None:
-        pic = point_in_circle((self.x, self.y), self.size / 2, cursor)
+    def update(self, delta_time: float, cursor: Point2 | None) -> None:
+        pic = point_in_circle((self.x, self.y), self.size / 2, cursor) if cursor else False
         if pic and not self.fired and self.left and not self.disabled:
             self.current_hold_time += delta_time
         if self.current_hold_time >= self.hold_time and not self.fired:

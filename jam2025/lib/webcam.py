@@ -156,19 +156,9 @@ class Webcam:
             return
 
         with self._data_lock:
-            try:
-                retval, frame = self._webcam.read()
-                while not retval:
-                    retval, frame = self._webcam.read()
-                self._webcam_size = frame.shape[1], frame.shape[0]
-                self._webcam_fps = self._webcam.get(cv2.CAP_PROP_FPS)
-                if self._webcam_read:
-                    self._frames.put(frame)
-            except Exception as e:
-                self._webcam_state = Webcam.ERROR
-                raise e
-            else:
-                self._webcam_state = Webcam.CONNECTED
+            self._webcam_size = int(self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self._webcam_fps = int(self._webcam.get(cv2.CAP_PROP_FPS))
+            self._webcam_state = Webcam.CONNECTED
             print('finished connecting')
         
         if self._webcam_state == Webcam.ERROR:
@@ -224,9 +214,7 @@ class WebcamController:
         self.sprite = arcade.SpriteSolidColor(*size, *center)
         self.crunchy_sprite = arcade.SpriteSolidColor(*size, *center)
 
-        self._fetched_frame: np.ndarray | None = self.webcam.get_frame()
-        if self._fetched_frame is None:
-            raise ValueError('No initial frame found')
+        self._fetched_frame: np.ndarray | None = np.zeros((self.webcam.size[0], self.webcam.size[1], 3), np.int64)
         self._pixel_found = False
         self._raw_cursor: tuple[int, int] | None = None
         self._cursor: tuple[int, int] | None = None

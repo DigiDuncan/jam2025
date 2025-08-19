@@ -2,7 +2,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 
-class _Settings():
+class _Settings:
     def __init__(self) -> None:
         self._registered_refresh_funcs: dict[Callable, Sequence[str] | None] = {}
 
@@ -27,10 +27,10 @@ class _Settings():
         super().__setattr__(name, value)
         if not name.startswith("_"):
             for f, mask in self._registered_refresh_funcs.items():
-                if mask is None or name in mask:
+                if not mask or name in mask:
                     f()
 
-    def register_refresh_func(self, f: Callable, mask: Sequence[str] | None = None) -> None:
+    def register_refresh_func(self, f: Callable, mask: Sequence[str] = ()) -> None:
         if f not in self._registered_refresh_funcs:
             self._registered_refresh_funcs[f] = mask
 

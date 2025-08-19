@@ -4,7 +4,7 @@ from jam2025.core.button import Button
 from jam2025.core.textbox import Textbox
 
 
-class TextboxTestWindow(arcade.Window):
+class TextboxTestView(arcade.View):
     def __init__(self) -> None:
         super().__init__()
         self.text_box = Textbox(arcade.XYWH(self.center_x, self.center_y, self.width * 0.75, self.height * 0.33), 48, "8bitoperator JVE",
@@ -42,9 +42,3 @@ class TextboxTestWindow(arcade.Window):
         self.text_box.draw()
         self.button.draw()
 
-def main() -> None:
-    win = TextboxTestWindow()
-    win.run()
-
-if __name__ == '__main__':
-    main()

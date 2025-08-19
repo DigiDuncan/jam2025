@@ -1,5 +1,6 @@
 from arcade import View, Window
 
+from jam2025.lib import logging
 from jam2025.tests.webcam import WebcamTestView
 
 SIZE = (1280, 720)
@@ -11,9 +12,10 @@ class MainWindow(Window):
 
         self.views: list[View] = [WebcamTestView()]
 
-    def on_show(self):
+    def on_show(self) -> None:
         self.show_view(self.views[0])
 
 
 def main() -> None:
+    logging.setup()
     MainWindow().run()

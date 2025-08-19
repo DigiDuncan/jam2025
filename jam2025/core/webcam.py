@@ -8,7 +8,9 @@ from arcade import Vec2
 from arcade.types import Point2
 from PIL import Image
 
+from jam2025.lib.logging import logger
 from jam2025.lib.procedural_animator import SecondOrderAnimatorKClamped
+from jam2025.lib.settings import SETTINGS
 from jam2025.lib.utils import frame_data_to_image, rgb_to_l
 
 type WebcamState = int
@@ -31,7 +33,7 @@ class Webcam:
 
         self._frames: queue.Queue[np.ndarray | None] = queue.Queue()
         self._thread: threading.Thread = threading.Thread(target=self._poll, daemon=True)
-    
+
         # The data lock prevents race conditions by blocking until the thread
         # releases it.
         self._data_lock: threading.Lock = threading.Lock()
@@ -44,24 +46,24 @@ class Webcam:
         self._webcam_read = start_reading
         self._thread.start()
 
-    def disconnect(self, block: bool = False):
+    def disconnect(self, block: bool = False) -> None:
         with self._data_lock:
             if self._webcam is None:
                 return
-            print('set disconnect')
+            logger.debug('set disconnect')
             self._webcam_disconnect = True
         if block:
-            print('started blocking')
+            logger.debug('started blocking')
             # Block the disconnect thread until the disconnect msg has been recieved.
             # This might be unsafe as there is no timeout, but it's only unsafe
             # If I have fucked up.
             self._thread.join()
-            print('finished blocking')
+            logger.debug('finished blocking')
 
-    def _disconnect(self):
+    def _disconnect(self) -> None:
         # This is also run in the thread if we have to wait to disconnect
         # so this has to be a seperate call.
-        print('disconnecting')
+        logger.debug('disconnecting')
         with self._data_lock:
             if self._webcam is not None:
                 self._webcam.release()
@@ -84,21 +86,21 @@ class Webcam:
             # This happens last as a safety check. We can't start a thread that
             # has already been started, even if it's dead.
             self._webcam_state: WebcamState = Webcam.DISCONNECTED
-        print('finished disconnecting')
-        
+        logger.debug('finished disconnecting')
 
-    def reconnect(self, start_reading: bool = False):
+
+    def reconnect(self, start_reading: bool = False) -> None:
         # Disconnect the camera, and block until that is done, then reconnect.
         self.disconnect(block=True)
         with self._data_lock:
             force_disconnect = self._webcam_state != Webcam.DISCONNECTED
         if force_disconnect:
-            print('Problem disconnecting webcam, probably encountered an error')
+            logger.debug('Problem disconnecting webcam, probably encountered an error')
             self._disconnect()
-        print('reconnecting')
+        logger.debug('reconnecting')
         self.connect(start_reading)
 
-    def set_read(self, read: bool):
+    def set_read(self, read: bool) -> None:
         with self._data_lock:
             self._webcam_read = True
 
@@ -135,7 +137,7 @@ class Webcam:
             return self._webcam_state == Webcam.CONNECTED
 
     def _poll(self) -> None:
-        print('thread started')
+        logger.debug('thread started')
         with self._data_lock:
             try:
                 self._webcam = cv2.VideoCapture(self._index)
@@ -144,14 +146,14 @@ class Webcam:
             except Exception as e:
                 self._webcam_state = Webcam.ERROR
                 raise e
-            print('connected to webcam')
+            logger.debug('connected to webcam')
 
         # We have to exit the data lock to disconnect because it locks internally
-        # and if the thread is already holding the lock it will brick. 
+        # and if the thread is already holding the lock it will brick.
         with self._data_lock:
             immediate_disconnect = self._webcam_disconnect
         if immediate_disconnect:
-            print('connecting interupted')
+            logger.debug('connecting interupted')
             self._disconnect()
             return
 
@@ -196,8 +198,8 @@ class Webcam:
             # print("cv2.CAP_PROP_CHANNEL))", self._webcam.get(cv2.CAP_PROP_CHANNEL))
             # print("cv2.CAP_PROP_AUTO_WB))", self._webcam.get(cv2.CAP_PROP_AUTO_WB))
             # print("cv2.CAP_PROP_WB_TEMPERATURE))", self._webcam.get(cv2.CAP_PROP_WB_TEMPERATURE))
-            # print('finished connecting')
-        
+            logger.debug('finished connecting')
+
         if self._webcam_state == Webcam.ERROR:
             # This shouldn't really be possible.
             return
@@ -211,7 +213,7 @@ class Webcam:
             if not read:
                 continue # This will give faster responses than reading and not sending.
             if disconnect:
-                print('disconnect found in loop')
+                logger.debug('disconnect found in loop')
                 # If we wanted to be really safe we would disconnect even when the window closed
                 # through an error
                 break
@@ -222,7 +224,7 @@ class Webcam:
                 with self._data_lock:
                     self._webcam_state = Webcam.ERROR
                 raise e
-            
+
             if not retval:
                 # This should maybe set the Webcam state to Error.
                 with self._data_lock:
@@ -230,7 +232,7 @@ class Webcam:
                 raise ValueError('Failed to Read Frame (camera most likely disconnected).')
             else:
                 self._frames.put(frame)
-        
+
         self._disconnect()
 
 
@@ -260,12 +262,12 @@ class WebcamController:
         self._cloud = []
         self._no_pixel_time = 0.0
 
-        self._threshold = 245
-        self._downsample = 4
-        self._top_pixels = 50
-        self._frequency = 2.0
-        self._dampening = 1.8
-        self._response = -0.5
+        self._threshold = SETTINGS.threshold
+        self._downsample = SETTINGS.downsample
+        self._top_pixels = SETTINGS.polled_points
+        self._frequency = SETTINGS.frequency
+        self._dampening = SETTINGS.dampening
+        self._response = SETTINGS.response
 
         self.timeout = 1.0
 
@@ -273,6 +275,9 @@ class WebcamController:
         self.show_lightness = False
 
         self.animator = SecondOrderAnimatorKClamped(self._frequency, self._dampening, self._response, Vec2(0, 0), Vec2(0, 0), 0)  # type: ignore -- Animatable
+
+        SETTINGS.register_refresh_func(self._refresh_nonanimator_settings, ("threshold", "downsample", "polled_points"))
+        SETTINGS.register_refresh_func(self._refresh_animator_settings, ("frequency", "dampening", "response"))
 
     @property
     def size(self) -> Vec2:
@@ -373,10 +378,21 @@ class WebcamController:
             if brightest_pixels:
                 self._highest_l = brightest_pixels[0][1]
             self._pixel_found = True
-            return (int(average_pos[0] * downsample * self.scaling), int(average_pos[1] * downsample * self.scaling))
+            bp = (int(average_pos[0] * downsample * self.scaling), int(average_pos[1] * downsample * self.scaling))
+            return bp
         except Exception as _:  # noqa: BLE001
             self._pixel_found = False
             return None
+
+    def _refresh_nonanimator_settings(self) -> None:
+        self.threshold = SETTINGS.threshold
+        self.downsample = SETTINGS.downsample
+        self.top_pixels = SETTINGS.polled_points
+
+    def _refresh_animator_settings(self) -> None:
+        self.frequency = SETTINGS.frequency
+        self.dampening = SETTINGS.dampening
+        self.response = SETTINGS.response
 
     def update(self, delta_time: float) -> None:
         frame_data = self._get_frame_data()

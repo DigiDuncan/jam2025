@@ -1,7 +1,5 @@
-import jam2025.tests.webcam
-import jam2025.tests.textbox
+import jam2025.main
 
 if __name__ == "__main__":
-    # jam2025.tests.textbox.main()
-    jam2025.tests.webcam.main()
+    jam2025.main.main()
 

@@ -1,19 +1,14 @@
 import arcade
 
-from jam2025.lib.button import Button
+from jam2025.core.button import Button
 from jam2025.lib.utils import open_settings, text_to_rect
-from jam2025.lib.webcam import WebcamController
+from jam2025.core.webcam import WebcamController
 
-FPS = 240
-
-class WebcamTestWindow(arcade.Window):
-    DEFAULT_WIDTH = 1280
-    DEFAULT_HEIGHT = 720
-
+class WebcamTestView(arcade.View):
     def __init__(self) -> None:
         self.webcam = WebcamController(scaling = 2)
 
-        super().__init__(*self.webcam.size, "Pass The Torch!", update_rate = (1 / FPS)) # TestWindow.DEFAULT_WIDTH, TestWindow.DEFAULT_HEIGHT
+        super().__init__()
 
         self.spritelist = arcade.SpriteList()
         self.spritelist.append(self.webcam.sprite)
@@ -41,7 +36,6 @@ class WebcamTestWindow(arcade.Window):
 
     def on_close(self) -> None:
         self.webcam.webcam.disconnect(block=True)
-        super().on_close()
         print('closing')
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
@@ -100,7 +94,7 @@ class WebcamTestWindow(arcade.Window):
         self.fps_text.text = f"{1/delta_time:.1f} FPS"
         if self.webcam.raw_cursor:
             self.coordinate_text.text = f"({self.webcam.raw_cursor[0]}, {self.webcam.raw_cursor[1]})"
-            self.light_text.text = str(self.webcam._highest_l)
+            self.light_text.text = f"{self.webcam._highest_l:.3f}"
         else:
             self.coordinate_text.text = "No bright point found!"
         self.threshold_text.text = f"Threshold: {self.webcam.threshold}"
@@ -138,10 +132,3 @@ class WebcamTestWindow(arcade.Window):
             self.response_text.draw()
             self.keybind_text.draw()
         self.fps_text.draw()
-
-def main() -> None:
-    win = WebcamTestWindow()
-    win.run()
-
-if __name__ == '__main__':
-    main()

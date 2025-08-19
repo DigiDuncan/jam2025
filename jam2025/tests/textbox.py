@@ -1,7 +1,7 @@
 import arcade
 
-from jam2025.lib.button import Button
-from jam2025.lib.textbox import Textbox
+from jam2025.core.button import Button
+from jam2025.core.textbox import Textbox
 
 
 class TextboxTestWindow(arcade.Window):

@@ -8,7 +8,7 @@ from jam2025.core.webcam import WebcamController
 
 class WebcamTestView(arcade.View):
     def __init__(self) -> None:
-        self.webcam = WebcamController(scaling = 2)
+        self.webcam = WebcamController(0, scaling = 2)
 
         super().__init__()
 

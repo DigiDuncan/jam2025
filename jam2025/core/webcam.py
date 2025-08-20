@@ -13,6 +13,17 @@ from jam2025.lib.procedural_animator import SecondOrderAnimatorKClamped
 from jam2025.lib.settings import SETTINGS
 from jam2025.lib.utils import frame_data_to_image, rgb_to_l
 
+from pygrabber.dshow_graph import FilterGraph
+
+def get_available_cameras() -> dict[int, str]:
+    """https://stackoverflow.com/questions/70886225/get-camera-device-name-and-port-for-opencv-videostream-python"""
+    devices = FilterGraph().get_input_devices()
+    available_cameras = {}
+    for device_index, device_name in enumerate(devices):
+        available_cameras[device_index] = device_name
+    return available_cameras
+
+
 type WebcamState = int
 class Webcam:
     DISCONNECTED: WebcamState = 0 # thread has not started

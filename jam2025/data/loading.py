@@ -6,4 +6,4 @@ from jam2025 import data
 
 def load_texture(name: str, ext: str = "png") -> Texture:
     with pkg_resources.path(data) as p:
-        return _load_texture(p / f"{name}.{ext}")
+        return _load_texture(p / "images" / f"{name}.{ext}")

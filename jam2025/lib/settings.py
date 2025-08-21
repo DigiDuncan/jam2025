@@ -7,6 +7,10 @@ class _Settings:
     def __init__(self) -> None:
         self._registered_refresh_funcs: dict[Callable, Sequence[str] | None] = {}
 
+        self.screen_width: int = 1280
+        self.screen_height: int = 720
+        self.screen_fps: int = 240
+
         self.device_id: int = 0
         self.device_name: str = "USB Video Device"
 

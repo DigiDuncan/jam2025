@@ -4,12 +4,18 @@ import arcade
 from jam2025.core.ui.button import ClickButton
 from jam2025.core.ui.popup import Popup
 from jam2025.core.ui.slider import Slider
+from jam2025.core.void import Void
+from jam2025.data.loading import load_music
 from jam2025.lib.logging import logger
 from jam2025.core.webcam import WebcamController
 
 class MouseCalibrationView(View):
     def __init__(self) -> None:
         super().__init__()
+        self.void = Void()
+        self.music = load_music("found-in-space-17")
+        self.music.play(volume = 0.15, loop = True)
+
         self.webcam = WebcamController(0)
         self.webcam.sprite.size = (self.size[0] / 2, self.size[1] / 2)
         self.webcam.sprite.center_x = self.center_x
@@ -60,6 +66,7 @@ class MouseCalibrationView(View):
 
     def on_draw(self) -> bool | None:
         self.clear()
+        self.void.draw()
         self.popup.draw()
         self.slider.draw()
         self.slider_text.draw()

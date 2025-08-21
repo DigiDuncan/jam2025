@@ -11,7 +11,7 @@ class MainWindow(Window):
     def __init__(self) -> None:
         super().__init__(SIZE[0], SIZE[1], "Pass The Torch | Jam 2025B", update_rate = 1 / FPS)
 
-        self.views: list[View] = [MouseCalibrationView(), WebcamTestView()]
+        self.views: list[View] = [MouseCalibrationView()]
 
     def on_show(self) -> None:
         self.show_view(self.views[0])

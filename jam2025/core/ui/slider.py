@@ -23,21 +23,38 @@ class Slider[RT]:
         self.sound = sound
         self.rounding_function = rounding_function
 
-        self._registered_functions: list[Callable[[RT], None]] = []
+        self._grabbed = False
+
+        self._registered_on_update_functions: list[Callable[[RT], None]] = []
+        self._registered_on_drop_functions: list[Callable[[RT], None]] = []
 
     @property
     def value(self) -> RT:
         val = lerp(self.slider_min, self.slider_max, perc(self.rect.left + self.handle_rect.width, self.rect.right, self.handle_rect.right))
         return self.rounding_function(val)
 
-    def register(self, f: Callable[[RT], None]) -> None:
-        if f not in self._registered_functions:
-            self._registered_functions.append(f)
+    @property
+    def grabbed(self) -> bool:
+        return self._grabbed
+
+    @grabbed.setter
+    def grabbed(self, val: bool) -> None:
+        self._grabbed = val
+        for f in self._registered_on_drop_functions:
+            f(self.value)
+
+    def register(self, f: Callable[[RT], None], on_drop: bool = False) -> None:
+        if on_drop:
+            if f not in self._registered_on_drop_functions:
+                self._registered_on_drop_functions.append(f)
+        else:
+            if f not in self._registered_on_update_functions:
+                self._registered_on_update_functions.append(f)
 
     def update(self, cursor_pos: Vec2) -> None:
-        if cursor_pos in self.handle_rect:
+        if self.grabbed:
             self.handle_rect = self.handle_rect.align_x(clamp(self.rect.left + self.handle_rect.width / 2, cursor_pos.x, self.rect.right - self.handle_rect.width / 2))
-        for f in self._registered_functions:
+        for f in self._registered_on_update_functions:
             f(self.value)
 
     def draw(self) -> None:

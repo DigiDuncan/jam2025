@@ -1,6 +1,6 @@
 import arcade
 
-from jam2025.core.button import Button
+from jam2025.core.ui.button import Button
 from jam2025.lib.utils import open_settings, text_to_rect
 from jam2025.lib.logging import logger
 from jam2025.lib.settings import SETTINGS

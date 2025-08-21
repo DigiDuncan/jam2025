@@ -15,7 +15,7 @@ def point_in_circle(center: Point2, radius: float, point: Point2) -> bool:
     return d <= radius
 
 class HoverButton:
-    def __init__(self, x: int, y: int, size: int, thickness: int, hold_time: float = 1.5, cooldown_time: float = 1.0,
+    def __init__(self, x: float, y: float, size: int, thickness: int, hold_time: float = 1.5, cooldown_time: float = 1.0,
                  back_color: Color = arcade.color.GRAY, front_color: Color = arcade.color.RED, active_color: Color = arcade.color.GREEN,
                  callback: Callable = nothing, callback_args: tuple = ()) -> None:
         self.x = x
@@ -75,7 +75,7 @@ class HoverButton:
             arcade.draw_circle_outline(self.x, self.y, self.size / 2, self.back_color.replace(a = 128), self.thickness)
 
 class ClickButton:
-    def __init__(self, x: int, y: int, size: int, thickness: int,
+    def __init__(self, x: float, y: float, size: int, thickness: int,
                  back_color: Color = arcade.color.GRAY, front_color: Color = arcade.color.RED, active_color: Color = arcade.color.GREEN,
                  callback: Callable = nothing, callback_args: tuple = ()) -> None:
         self.x = x

@@ -14,7 +14,7 @@ class MainWindow(Window):
         self.views: list[View] = [MouseCalibrationView(), WebcamTestView()]
 
     def on_show(self) -> None:
-        self.show_view(self.views[1])
+        self.show_view(self.views[0])
 
 
 def main() -> None:

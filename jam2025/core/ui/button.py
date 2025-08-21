@@ -6,6 +6,7 @@ from arcade.math import get_distance
 from arcade.types import Color, Point2
 
 from jam2025.lib.anim import ease_linear, perc
+from jam2025.lib.typing import NEVER
 
 def nothing(*args: Any) -> None:
     ...
@@ -91,7 +92,7 @@ class ClickButton:
         self.disabled = False
         self.hovered = False
         self.clicked = False
-        self.last_fire_time = -float("inf")
+        self.last_fire_time = NEVER
         self.cooldown = 1.0
 
     def update(self, cursor: arcade.Vec2, clicked: bool) -> None:

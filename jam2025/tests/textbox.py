@@ -23,7 +23,7 @@ class TextboxTestView(arcade.View):
     def queue_message(self):
         if self.messages:
             msg = self.messages.pop(0)
-            self.text_box.queue(msg)
+            self.text_box.show(msg)
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         if symbol == arcade.key.Q and self.messages:

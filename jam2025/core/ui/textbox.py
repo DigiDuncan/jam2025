@@ -34,7 +34,7 @@ class Textbox:
         self.initial_text = initial_text
 
         self.text = Text(self.initial_text, self.rect.left + self.border, self.rect.top + self.border,
-                         self.color, self.text_size, self.rect.width - (self.border * 2),
+                         self.color, self.text_size, self.rect.width - (self.border * 2),  # type: ignore -- temped to upstream this issue
                          font_name = self.font, anchor_x = "left", anchor_y = "top", multiline = True)
         self.player = Player()
 
@@ -55,7 +55,7 @@ class Textbox:
     def draw(self) -> None:
         if self.background:
             if self._background_type == BackgroundType.TEXTURE:
-                draw_texture_rect(self.background, self.rect)
+                draw_texture_rect(self.background, self.rect)  # type: ignore -- static typing fail
             elif self._background_type == BackgroundType.COLOR:
-                draw_rect_filled(self.rect, self.background)
+                draw_rect_filled(self.rect, self.background)  # type: ignore -- static typing fail (double kill)
         self.text.draw()

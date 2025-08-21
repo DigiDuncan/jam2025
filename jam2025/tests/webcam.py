@@ -8,9 +8,9 @@ from jam2025.core.webcam import WebcamController
 
 class WebcamTestView(arcade.View):
     def __init__(self) -> None:
-        self.webcam = WebcamController(0, scaling = 2)
-
         super().__init__()
+
+        self.webcam = WebcamController(0, scaling = 2)
         self.button = HoverButton(self.center_x, self.height / 4, 40, 6)
 
         self.show_crunchy = False

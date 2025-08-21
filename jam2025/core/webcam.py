@@ -15,6 +15,8 @@ from jam2025.lib.utils import frame_data_to_image, rgb_to_l
 
 from pygrabber.dshow_graph import FilterGraph
 
+# !: This whole thing is full of type errors, but do you care?
+
 def get_available_cameras() -> dict[int, str]:
     """https://stackoverflow.com/questions/70886225/get-camera-device-name-and-port-for-opencv-videostream-python"""
     devices = FilterGraph().get_input_devices()
@@ -115,13 +117,12 @@ class Webcam:
         with self._data_lock:
             self._webcam_read = True
 
-    def get_frame(self) -> None:
+    def get_frame(self) -> np.ndarray | None:
         try:
             frame = self._frames.get(False)
-        except queue.Empty:
-            frame = None
-        finally:
             return frame
+        except queue.Empty:
+            return None
 
     @property
     def state(self) -> WebcamState:
@@ -241,8 +242,7 @@ class Webcam:
                 with self._data_lock:
                     self._webcam_state = Webcam.ERROR
                 raise ValueError('Failed to Read Frame (camera most likely disconnected).')
-            else:
-                self._frames.put(frame)
+            self._frames.put(frame)
 
         self._disconnect()
 
@@ -262,8 +262,8 @@ class WebcamController:
 
         size = self.size
         center = size / 2.0
-        self.sprite = arcade.SpriteSolidColor(*size, *center)
-        self.crunchy_sprite = arcade.SpriteSolidColor(*size, *center)
+        self.sprite = arcade.SpriteSolidColor(*size, *center)  # type: ignore -- omg this float/int shit is killing me
+        self.crunchy_sprite = arcade.SpriteSolidColor(*size, *center)  # type: ignore -- ditto
 
         self.spritelist = arcade.SpriteList()
         self.spritelist.append(self.sprite)

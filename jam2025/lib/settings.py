@@ -1,5 +1,6 @@
 from collections.abc import Callable, Sequence
-from typing import Any
+from pathlib import Path
+from typing import Any, Self
 
 
 class _Settings:
@@ -33,5 +34,12 @@ class _Settings:
     def register_refresh_func(self, f: Callable, mask: Sequence[str] = ()) -> None:
         if f not in self._registered_refresh_funcs:
             self._registered_refresh_funcs[f] = mask
+
+    @classmethod
+    def from_file(cls, file_path: Path) -> Self:
+        raise NotImplementedError
+
+    def to_file(self, file_path: Path) -> None:
+        raise NotImplementedError
 
 SETTINGS = _Settings()

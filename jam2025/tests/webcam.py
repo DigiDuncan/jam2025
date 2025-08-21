@@ -1,6 +1,6 @@
 import arcade
 
-from jam2025.core.ui.button import Button
+from jam2025.core.ui.button import HoverButton
 from jam2025.lib.utils import open_settings, text_to_rect
 from jam2025.lib.logging import logger
 from jam2025.lib.settings import SETTINGS
@@ -14,7 +14,7 @@ class WebcamTestView(arcade.View):
 
         self.spritelist = arcade.SpriteList()
         self.spritelist.append(self.webcam.sprite)
-        self.button = Button(self.center_x, self.height / 4, 40, 6)
+        self.button = HoverButton(self.center_x, self.height / 4, 40, 6)
 
         self.show_crunchy = False
         self.show_video = True

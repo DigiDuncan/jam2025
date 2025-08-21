@@ -1,7 +1,7 @@
 import arcade
 
-from jam2025.core.button import Button
-from jam2025.core.textbox import Textbox
+from jam2025.core.ui.button import HoverButton
+from jam2025.core.ui.textbox import Textbox
 
 
 class TextboxTestView(arcade.View):
@@ -12,7 +12,7 @@ class TextboxTestView(arcade.View):
 
         self.messages = ["This is a textbox.", "We can use it to make text happen, and this is a much longer message.", "We're going to see if this works!", None]
 
-        self.button = Button(self.center_x, self.height / 4, 40, 6)
+        self.button = HoverButton(self.center_x, self.height / 4, 40, 6)
         self.button.callback = self.queue_message
 
         self.cursor = None

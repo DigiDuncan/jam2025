@@ -10,6 +10,10 @@ class _Settings:
         self.device_id: int = 0
         self.device_name: str = "USB Video Device"
 
+        self.webcam_width: int = 1280
+        self.webcam_height: int = 720
+        self.webcam_fps: int = 30
+
         self.threshold: int = 245
         self.downsample: int = 8
         self.polled_points: int = 50

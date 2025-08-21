@@ -11,7 +11,7 @@ from PIL import Image
 from jam2025.lib.logging import logger
 from jam2025.lib.procedural_animator import SecondOrderAnimatorKClamped
 from jam2025.lib.settings import SETTINGS
-from jam2025.lib.utils import frame_data_to_image, rgb_to_l
+from jam2025.lib.utils import frame_data_to_image, map_range, rgb_to_l
 
 from pygrabber.dshow_graph import FilterGraph
 
@@ -272,6 +272,7 @@ class WebcamController:
         self._pixel_found = False
         self._raw_cursor: tuple[int, int] | None = None
         self._cursor: tuple[int, int] | None = None
+        self._mapped_cursor: tuple[int, int] | None = None
         self._highest_l: int | None = None
         self._cloud = []
         self._no_pixel_time = 0.0
@@ -282,6 +283,11 @@ class WebcamController:
         self._frequency = SETTINGS.frequency
         self._dampening = SETTINGS.dampening
         self._response = SETTINGS.response
+
+        self._map_x_min = SETTINGS.x_min
+        self._map_x_max = SETTINGS.x_max
+        self._map_y_min = SETTINGS.y_min
+        self._map_y_max = SETTINGS.y_max
 
         self.timeout = 1.0
 
@@ -303,6 +309,8 @@ class WebcamController:
     def raw_cursor(self) -> Point2 | None: return self._raw_cursor
     @property
     def cursor(self) -> Point2 | None: return self._cursor
+    @property
+    def mapped_cursor(self) -> Point2 | None: return self._mapped_cursor
     @property
     def cloud(self): return self._cloud
 
@@ -433,6 +441,10 @@ class WebcamController:
         if self._raw_cursor:
             self._no_pixel_time = 0.0
             self._cursor = self.animator.update(delta_time, Vec2(*self._raw_cursor))
+            self._mapped_cursor = (
+                int(map_range(self.cursor[0], 0, self.webcam.size[0], self._map_x_min, self._map_x_max)),
+                int(map_range(self.cursor[1], 0, self.webcam.size[1], self._map_y_min, self._map_y_max))
+            )
         else:
             self._no_pixel_time += delta_time
             if self._no_pixel_time >= self.timeout:

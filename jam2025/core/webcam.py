@@ -265,6 +265,9 @@ class WebcamController:
         self.sprite = arcade.SpriteSolidColor(*size, *center)
         self.crunchy_sprite = arcade.SpriteSolidColor(*size, *center)
 
+        self.spritelist = arcade.SpriteList()
+        self.spritelist.append(self.sprite)
+
         self._fetched_frame: np.ndarray | None = np.zeros((self.webcam.size[0], self.webcam.size[1], 3), np.int64)
         self._pixel_found = False
         self._raw_cursor: tuple[int, int] | None = None
@@ -434,3 +437,6 @@ class WebcamController:
             self._no_pixel_time += delta_time
             if self._no_pixel_time >= self.timeout:
                 self._cursor = None
+
+    def draw(self) -> None:
+        self.spritelist.draw()

@@ -11,9 +11,6 @@ class WebcamTestView(arcade.View):
         self.webcam = WebcamController(0, scaling = 2)
 
         super().__init__()
-
-        self.spritelist = arcade.SpriteList()
-        self.spritelist.append(self.webcam.sprite)
         self.button = HoverButton(self.center_x, self.height / 4, 40, 6)
 
         self.show_crunchy = False
@@ -113,7 +110,7 @@ class WebcamTestView(arcade.View):
     def on_draw(self) -> None:
         self.clear(arcade.color.BLACK)
         if self.show_video:
-            self.spritelist.draw()
+            self.webcam.draw()
         if self.webcam.raw_cursor:
             if self.show_raw_point:
                 rect = arcade.XYWH(self.webcam.raw_cursor[0], self.webcam.raw_cursor[1], 10, 10)

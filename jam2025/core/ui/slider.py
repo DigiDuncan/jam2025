@@ -52,7 +52,7 @@ class Slider[RT]:
                 self._registered_on_update_functions.append(f)
 
     def update(self, cursor_pos: Vec2) -> None:
-        if self.grabbed:
+        if self.grabbed or (cursor_pos in self.rect):
             self.handle_rect = self.handle_rect.align_x(clamp(self.rect.left + self.handle_rect.width / 2, cursor_pos.x, self.rect.right - self.handle_rect.width / 2))
         for f in self._registered_on_update_functions:
             f(self.value)

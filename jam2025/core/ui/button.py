@@ -94,7 +94,7 @@ class ClickButton:
         self.last_fire_time = -float("inf")
         self.cooldown = 1.0
 
-    def update(self, cursor: Point2, clicked: bool) -> None:
+    def update(self, cursor: arcade.Vec2, clicked: bool) -> None:
         last_click = self.clicked
         self.hovered = point_in_circle((self.x, self.y), self.size / 2, cursor)
         self.clicked = clicked

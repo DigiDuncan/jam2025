@@ -22,6 +22,7 @@ class Progress(IntEnum):
     WEBCAM_ACTIVATE = 2
     WEBCAM_ON = 3
     SHOW_CALIB = 4
+    HIDE_CALIB = 5
 
 class MouseCalibrationView(View):
     def __init__(self) -> None:
@@ -92,7 +93,9 @@ class MouseCalibrationView(View):
             self.confirm_label.text = "Continue"
         elif self.dialouge_shown == Progress.SHOW_CALIB:
             ...
-
+        elif self.dialouge_shown == Progress.HIDE_CALIB:
+            self.show_self = False
+            self.popup.popup("no_mouse")
             self.button.disabled = True
 
     def update_threshold(self, val: int) -> None:
@@ -170,7 +173,7 @@ class MouseCalibrationView(View):
         self.button.draw()
         self.textbox.draw()
 
-        if self.dialouge_shown in [Progress.BE_SEEN, Progress.WEBCAM_ACTIVATE]:
+        if self.dialouge_shown in [Progress.BE_SEEN, Progress.WEBCAM_ACTIVATE, Progress.WEBCAM_ON, Progress.SHOW_CALIB]:
             self.confirm_label.draw()
 
         if self.dialouge_shown in [Progress.SHOW_CALIB]:

@@ -16,7 +16,7 @@ from jam2025.core.webcam import WebcamController
 from jam2025.lib.typing import FOREVER
 from jam2025.lib.settings import SETTINGS
 
-class Progress(IntEnum):
+class Phase(IntEnum):
     NONE = 0
     BE_SEEN = 1
     WEBCAM_ACTIVATE = 2
@@ -69,7 +69,7 @@ class MouseCalibrationView(View):
         self.polled_points_slider.register(self.update_polled_points)
 
         self.show_self = False
-        self.dialouge_shown = 0
+        self.phase = 0
         self.dialouge_times = {}
         self.time_since_shown_cam = FOREVER
 
@@ -80,20 +80,20 @@ class MouseCalibrationView(View):
          return len(self.textbox.current_message) * self.textbox.spc
 
     def button_clicked(self) -> None:
-        self.dialouge_shown += 1
-        self.dialouge_times[self.dialouge_shown] = GLOBAL_CLOCK.time
+        self.phase += 1
+        self.dialouge_times[self.phase] = GLOBAL_CLOCK.time
 
-        if self.dialouge_shown == Progress.BE_SEEN:
+        if self.phase == Phase.BE_SEEN:
             self.textbox.show(R"\WARE YOU PREPARED TO BE \YSEEN\W?/")
-        elif self.dialouge_shown == Progress.WEBCAM_ACTIVATE:
+        elif self.phase == Phase.WEBCAM_ACTIVATE:
             self.textbox.show(R"\WYOUR WEBCAM WILL NOW ACTIVATE.^2&CONTINUE?/")
-        elif self.dialouge_shown == Progress.WEBCAM_ON:
+        elif self.phase == Phase.WEBCAM_ON:
             self.textbox.show("")
             self.show_self = True
             self.confirm_label.text = "Continue"
-        elif self.dialouge_shown == Progress.SHOW_CALIB:
+        elif self.phase == Phase.SHOW_CALIB:
             ...
-        elif self.dialouge_shown == Progress.HIDE_CALIB:
+        elif self.phase == Phase.HIDE_CALIB:
             self.show_self = False
             self.popup.popup("no_mouse")
             self.button.disabled = True
@@ -135,30 +135,30 @@ class MouseCalibrationView(View):
 
         self.player.volume = lerp(0, 0.15, perc(self.start_time + 1, self.start_time + 3, GLOBAL_CLOCK.time))
 
-        if self.dialouge_shown == Progress.NONE:
+        if self.phase == Phase.NONE:
             self.button.disabled = self.popup.on_screen
 
-        if self.dialouge_shown in [Progress.BE_SEEN, Progress.WEBCAM_ACTIVATE, Progress.WEBCAM_ON, Progress.SHOW_CALIB]:
+        if self.phase in [Phase.BE_SEEN, Phase.WEBCAM_ACTIVATE, Phase.WEBCAM_ON, Phase.SHOW_CALIB]:
             confirm_alpha = lerp(0, 255,
-                                 perc(self.dialouge_times[self.dialouge_shown] + self.text_time + self.confirm_delays[self.dialouge_shown],
-                                      self.dialouge_times[self.dialouge_shown] + self.text_time + self.confirm_delays[self.dialouge_shown] + 1,
+                                 perc(self.dialouge_times[self.phase] + self.text_time + self.confirm_delays[self.phase],
+                                      self.dialouge_times[self.phase] + self.text_time + self.confirm_delays[self.phase] + 1,
                                       GLOBAL_CLOCK.time))
             self.confirm_label.color = arcade.color.WHITE.replace(a = int(confirm_alpha))
 
-        if Progress.WEBCAM_ON in self.dialouge_times:
-            webcam_alpha = lerp(0, 255, perc(self.dialouge_times[Progress.WEBCAM_ON], self.dialouge_times[Progress.WEBCAM_ON] + 1, GLOBAL_CLOCK.time))
+        if Phase.WEBCAM_ON in self.dialouge_times:
+            webcam_alpha = lerp(0, 255, perc(self.dialouge_times[Phase.WEBCAM_ON], self.dialouge_times[Phase.WEBCAM_ON] + 1, GLOBAL_CLOCK.time))
             self.webcam.sprite.alpha = int(webcam_alpha)
 
         # (640.0, 440.0)
-        if Progress.SHOW_CALIB in self.dialouge_times:
+        if Phase.SHOW_CALIB in self.dialouge_times:
             self.webcam.sprite.position = (
-                ease_quadinout(640.0, (self.webcam.sprite.width / 2) + 10, perc(self.dialouge_times[Progress.SHOW_CALIB], self.dialouge_times[Progress.SHOW_CALIB] + 1, GLOBAL_CLOCK.time)),
-                ease_quadinout(440.0, self.center_y, perc(self.dialouge_times[Progress.SHOW_CALIB], self.dialouge_times[Progress.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))
+                ease_quadinout(640.0, (self.webcam.sprite.width / 2) + 10, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time)),
+                ease_quadinout(440.0, self.center_y, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))
             )
             self.webcam.debug = True
 
             for slider, text in zip([self.threshold_slider, self.downsample_slider, self.polled_points_slider], [self.threshold_label, self.downsample_label, self.polled_points_label], strict = True):
-                x = ease_quadout(self.width, self.width - 550, perc(self.dialouge_times[Progress.SHOW_CALIB], self.dialouge_times[Progress.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))
+                x = ease_quadout(self.width, self.width - 550, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))
                 slider.rect = slider.rect.align_left(x)
                 text.x = slider.rect.left
 
@@ -173,10 +173,10 @@ class MouseCalibrationView(View):
         self.button.draw()
         self.textbox.draw()
 
-        if self.dialouge_shown in [Progress.BE_SEEN, Progress.WEBCAM_ACTIVATE, Progress.WEBCAM_ON, Progress.SHOW_CALIB]:
+        if self.phase in [Phase.BE_SEEN, Phase.WEBCAM_ACTIVATE, Phase.WEBCAM_ON, Phase.SHOW_CALIB]:
             self.confirm_label.draw()
 
-        if self.dialouge_shown in [Progress.SHOW_CALIB]:
+        if self.phase in [Phase.SHOW_CALIB]:
             self.threshold_slider.draw()
             self.downsample_slider.draw()
             self.polled_points_slider.draw()

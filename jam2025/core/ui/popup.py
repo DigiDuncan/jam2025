@@ -27,6 +27,14 @@ class Popup:
             self.sprite.texture = load_texture(new_icon)
         self.last_popup_time = GLOBAL_CLOCK.time
 
+    @property
+    def on_screen(self) -> bool:
+        if GLOBAL_CLOCK.time < self.last_popup_time:
+            return False
+        elif GLOBAL_CLOCK.time > self.last_popup_time + self.fade_in + self.hold + self.fade_out:
+            return False
+        return True
+
     def draw(self) -> None:
         time = GLOBAL_CLOCK.time
         fade_in_start = self.last_popup_time

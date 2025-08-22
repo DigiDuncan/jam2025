@@ -30,6 +30,8 @@ class MouseCalibrationView(View):
 
         self.button = ClickButton(self.center_x, self.height / 4, 40, 5, callback = self.button_clicked)
         self.confirm_label = Text("Confirm", self.center_x, self.button.y + (self.button.size / 2) + 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_x = "center", align = "center")
+        self.confirm_delays = {1: 0, 2: 1}
+
         self.mouse_click = False
 
         beep = load_sound("ut_txt")
@@ -42,21 +44,25 @@ class MouseCalibrationView(View):
 
         self.start_time = GLOBAL_CLOCK.time
 
+    @property
+    def text_time(self) -> float:
+         return len(self.textbox.current_message) * self.textbox.spc
+
     def button_clicked(self) -> None:
-        if self.dialouge_shown == 0:
+        self.dialouge_shown += 1
+        self.dialouge_times[self.dialouge_shown] = GLOBAL_CLOCK.time
+
+        if self.dialouge_shown == 1:
             self.textbox.show(R"\WARE YOU PREPARED TO BE \YSEEN\W?/")
-            self.dialouge_times[1] = GLOBAL_CLOCK.time
-            self.dialouge_shown += 1
-        elif self.dialouge_shown == 1:
-            self.textbox.show(R"\WYOUR WEBCAM WILL NOW ACTIVATE.^2&CONTINUE?/")
-            self.dialouge_times[2] = GLOBAL_CLOCK.time
-            self.dialouge_shown += 1
         elif self.dialouge_shown == 2:
+            self.textbox.show(R"\WYOUR WEBCAM WILL NOW ACTIVATE.^2&CONTINUE?/")
+        elif self.dialouge_shown == 3:
             self.textbox.show("")
             self.show_self = True
+        elif self.dialouge_shown == 4:
+            ...
+
             self.button.disabled = True
-            self.dialouge_times[3] = GLOBAL_CLOCK.time
-            self.dialouge_shown += 1
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
         self.mouse_click = True
@@ -75,12 +81,14 @@ class MouseCalibrationView(View):
 
         self.player.volume = lerp(0, 0.15, perc(self.start_time + 1, self.start_time + 3, GLOBAL_CLOCK.time))
 
-        if 1 in self.dialouge_times:
-            confirm_alpha = lerp(0, 255, perc(self.dialouge_times[1] + (len(self.textbox.current_message) * self.textbox.spc), self.dialouge_times[1] + (len(self.textbox.current_message) * self.textbox.spc + 1), GLOBAL_CLOCK.time))
-            self.confirm_label.color = arcade.color.WHITE.replace(a = int(confirm_alpha))
+        if self.dialouge_shown == 0:
+            self.button.disabled = self.popup.on_screen
 
-        if 2 in self.dialouge_times:
-            confirm_alpha = lerp(0, 255, perc(self.dialouge_times[2] + (len(self.textbox.current_message) * self.textbox.spc), self.dialouge_times[2] + (len(self.textbox.current_message) * self.textbox.spc + 1), GLOBAL_CLOCK.time))
+        if self.dialouge_shown in [1, 2]:
+            confirm_alpha = lerp(0, 255,
+                                 perc(self.dialouge_times[self.dialouge_shown] + self.text_time + self.confirm_delays[self.dialouge_shown],
+                                      self.dialouge_times[self.dialouge_shown] + self.text_time + self.confirm_delays[self.dialouge_shown] + 1,
+                                      GLOBAL_CLOCK.time))
             self.confirm_label.color = arcade.color.WHITE.replace(a = int(confirm_alpha))
 
         if 3 in self.dialouge_times:

@@ -11,9 +11,9 @@ class Slider[RT]:
                  inner_color: Color = arcade.color.BLACK, outer_color: Color = arcade.color.WHITE,
                  border_thickness: int = 3, handle_color: Color = arcade.color.WHITE,
                  handle_thickness: int = 25, sound: Sound | None = None, rounding_function: Callable[[float], RT] = float) -> None:
-        self.rect = rect
-        self.handle_rect = self.rect.clamp_width(handle_thickness, handle_thickness)
-        self.handle_rect = self.handle_rect.align_left(self.rect.left)
+        self._rect = rect
+        self.handle_rect = self._rect.clamp_width(handle_thickness, handle_thickness)
+        self.handle_rect = self.handle_rect.align_left(self._rect.left)
         self.slider_min = slider_min
         self.slider_max = slider_max
         self.inner_color = inner_color
@@ -29,9 +29,25 @@ class Slider[RT]:
         self._registered_on_drop_functions: list[Callable[[RT], None]] = []
 
     @property
+    def rect(self) -> Rect:
+        return self._rect
+
+    @rect.setter
+    def rect(self, new_rect: Rect) -> None:
+        current_rect = self._rect
+        handle_distance = self.handle_rect.left - current_rect.left
+        self._rect = new_rect
+        self.handle_rect = self.handle_rect.align_left(new_rect.left + handle_distance)
+
+    @property
     def value(self) -> RT:
-        val = lerp(self.slider_min, self.slider_max, perc(self.rect.left + self.handle_rect.width, self.rect.right, self.handle_rect.right))
+        val = lerp(self.slider_min, self.slider_max, perc(self._rect.left + self.handle_rect.width, self._rect.right, self.handle_rect.right))
         return self.rounding_function(val)
+
+    @value.setter
+    def value(self, val: RT) -> None:
+        p = perc(self.slider_min, self.slider_max, val)
+        self.handle_rect = self.handle_rect.align_right(lerp(self._rect.left + self.handle_rect.width, self._rect.right, p))
 
     @property
     def grabbed(self) -> bool:
@@ -52,12 +68,12 @@ class Slider[RT]:
                 self._registered_on_update_functions.append(f)
 
     def update(self, cursor_pos: Vec2) -> None:
-        if self.grabbed or (cursor_pos in self.rect):
-            self.handle_rect = self.handle_rect.align_x(clamp(self.rect.left + self.handle_rect.width / 2, cursor_pos.x, self.rect.right - self.handle_rect.width / 2))
+        if self.grabbed or (cursor_pos in self._rect):
+            self.handle_rect = self.handle_rect.align_x(clamp(self._rect.left + self.handle_rect.width / 2, cursor_pos.x, self._rect.right - self.handle_rect.width / 2))
         for f in self._registered_on_update_functions:
             f(self.value)
 
     def draw(self) -> None:
-        arcade.draw_rect_filled(self.rect, self.inner_color)
-        arcade.draw_rect_outline(self.rect, self.outer_color, self.border_thickness)
+        arcade.draw_rect_filled(self._rect, self.inner_color)
+        arcade.draw_rect_outline(self._rect, self.outer_color, self.border_thickness)
         arcade.draw_rect_filled(self.handle_rect, self.handle_color)

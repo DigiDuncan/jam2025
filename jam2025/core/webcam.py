@@ -293,6 +293,7 @@ class WebcamController:
 
         self.flip = False
         self.show_lightness = False
+        self.debug = False
 
         self.animator = SecondOrderAnimatorKClamped(self._frequency, self._dampening, self._response, Vec2(0, 0), Vec2(0, 0), 0)  # type: ignore -- Animatable
 
@@ -450,5 +451,17 @@ class WebcamController:
             if self._no_pixel_time >= self.timeout:
                 self._cursor = None
 
+    def debug_draw(self) -> None:
+        if self.raw_cursor:
+            rect = arcade.XYWH(self.raw_cursor[0] + self.sprite.left, self.raw_cursor[1] + self.sprite.bottom, 10, 10)
+            arcade.draw_rect_filled(rect, arcade.color.RED)
+            cloud = [(x[0][0] * self.downsample * self.scaling + self.sprite.left, x[0][1] * self.downsample * self.scaling + self.sprite.bottom) for x in self.cloud]
+            arcade.draw_points(cloud, arcade.color.BLUE, 3)
+        if self.cursor:
+            arect = arcade.XYWH(self.cursor[0] + self.sprite.left, self.cursor[1] + self.sprite.bottom, 10, 10)
+            arcade.draw_rect_filled(arect, arcade.color.GREEN)
+
     def draw(self) -> None:
         self.spritelist.draw()
+        if self.debug:
+            self.debug_draw()

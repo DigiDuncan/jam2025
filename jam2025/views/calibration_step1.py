@@ -1,3 +1,5 @@
+from enum import IntEnum
+
 from arcade import XYWH, Text, Vec2, View
 from arcade.clock import GLOBAL_CLOCK
 import arcade.color
@@ -11,6 +13,13 @@ from jam2025.lib.anim import lerp, perc
 from jam2025.lib.logging import logger
 from jam2025.core.webcam import WebcamController
 from jam2025.lib.typing import FOREVER
+
+class Progress(IntEnum):
+    NONE = 0
+    BE_SEEN = 1
+    WEBCAM_ACTIVATE = 2
+    WEBCAM_ON = 3
+    SHOW_CALIB = 4
 
 class MouseCalibrationView(View):
     def __init__(self) -> None:
@@ -52,14 +61,14 @@ class MouseCalibrationView(View):
         self.dialouge_shown += 1
         self.dialouge_times[self.dialouge_shown] = GLOBAL_CLOCK.time
 
-        if self.dialouge_shown == 1:
+        if self.dialouge_shown == Progress.BE_SEEN:
             self.textbox.show(R"\WARE YOU PREPARED TO BE \YSEEN\W?/")
-        elif self.dialouge_shown == 2:
+        elif self.dialouge_shown == Progress.WEBCAM_ACTIVATE:
             self.textbox.show(R"\WYOUR WEBCAM WILL NOW ACTIVATE.^2&CONTINUE?/")
-        elif self.dialouge_shown == 3:
+        elif self.dialouge_shown == Progress.WEBCAM_ON:
             self.textbox.show("")
             self.show_self = True
-        elif self.dialouge_shown == 4:
+        elif self.dialouge_shown == Progress.SHOW_CALIB:
             ...
 
             self.button.disabled = True
@@ -81,18 +90,18 @@ class MouseCalibrationView(View):
 
         self.player.volume = lerp(0, 0.15, perc(self.start_time + 1, self.start_time + 3, GLOBAL_CLOCK.time))
 
-        if self.dialouge_shown == 0:
+        if self.dialouge_shown == Progress.NONE:
             self.button.disabled = self.popup.on_screen
 
-        if self.dialouge_shown in [1, 2]:
+        if self.dialouge_shown in [Progress.BE_SEEN, Progress.WEBCAM_ACTIVATE]:
             confirm_alpha = lerp(0, 255,
                                  perc(self.dialouge_times[self.dialouge_shown] + self.text_time + self.confirm_delays[self.dialouge_shown],
                                       self.dialouge_times[self.dialouge_shown] + self.text_time + self.confirm_delays[self.dialouge_shown] + 1,
                                       GLOBAL_CLOCK.time))
             self.confirm_label.color = arcade.color.WHITE.replace(a = int(confirm_alpha))
 
-        if 3 in self.dialouge_times:
-            webcam_alpha = lerp(0, 255, perc(self.dialouge_times[3], self.dialouge_times[3] + 1, GLOBAL_CLOCK.time))
+        if Progress.WEBCAM_ON in self.dialouge_times:
+            webcam_alpha = lerp(0, 255, perc(self.dialouge_times[Progress.WEBCAM_ON], self.dialouge_times[Progress.WEBCAM_ON] + 1, GLOBAL_CLOCK.time))
             self.webcam.sprite.alpha = int(webcam_alpha)
 
     def on_close(self) -> None:

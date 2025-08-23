@@ -15,6 +15,7 @@ from jam2025.lib.logging import logger
 from jam2025.core.webcam import WebcamController
 from jam2025.lib.typing import FOREVER
 from jam2025.lib.settings import SETTINGS
+from jam2025.lib.utils import open_settings
 
 class Phase(IntEnum):
     NONE = 0
@@ -131,6 +132,10 @@ class MouseCalibrationView(View):
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.button.update(Vec2(x, y), self.mouse_click)
+
+    def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
+        if symbol == arcade.key.S:
+            open_settings(SETTINGS.device_name)
 
     def on_update(self, delta_time: float) -> None:
         self.webcam.update(delta_time)

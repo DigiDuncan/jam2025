@@ -24,6 +24,9 @@ class Phase(IntEnum):
     SHOW_CALIB = 4
     HIDE_CALIB = 5
 
+def make_text(text: str, x: float, y: float, align: str = "left") -> Text:
+    return Text(text, x, y, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_x = align, align = align)
+
 class MouseCalibrationView(View):
     def __init__(self) -> None:
         super().__init__()
@@ -42,7 +45,7 @@ class MouseCalibrationView(View):
         self.popup.popup("mouse")
 
         self.button = ClickButton(self.center_x, self.height / 6, 40, 5, callback = self.button_clicked)
-        self.confirm_label = Text("Confirm", self.center_x, self.button.y + (self.button.size / 2) + 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_x = "center", align = "center")
+        self.confirm_label = make_text("Confirm", self.center_x, self.button.y + (self.button.size / 2) + 5, align = "center")
         self.confirm_delays = {1: 0, 2: 1, 3: 2, 4: 2}
 
         self.mouse_click = False
@@ -53,19 +56,19 @@ class MouseCalibrationView(View):
         threshold_rect = LBWH(self.width - 550, self.center_y + 75, 500, 50)
         self.threshold_slider = Slider[int](threshold_rect, 1, 255, rounding_function = int)
         self.threshold_slider.value = 245
-        self.threshold_label = Text("Threshold: 245", self.threshold_slider.rect.left, self.threshold_slider.rect.top + 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono")
+        self.threshold_label = make_text("Threshold: 245", self.threshold_slider.rect.left, self.threshold_slider.rect.top + 5)
         self.threshold_slider.register(self.update_threshold)
 
         downsample_rect = LBWH(self.width - 550, self.center_y - 25, 500, 50)
         self.downsample_slider = Slider[int](downsample_rect, 4, 8, rounding_function = int)
         self.downsample_slider.value = 8
-        self.downsample_label = Text("Downsample: 8x", self.downsample_slider.rect.left, self.downsample_slider.rect.top + 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono")
+        self.downsample_label = make_text("Downsample: 8x", self.downsample_slider.rect.left, self.downsample_slider.rect.top + 5)
         self.downsample_slider.register(self.update_downsample)
 
         polled_points_rect = LBWH(self.width - 550, self.center_y - 125, 500, 50)
         self.polled_points_slider = Slider[int](polled_points_rect, 1, 500, rounding_function = int)
         self.polled_points_slider.value = 50
-        self.polled_points_label = Text("Polled Points: 50", self.polled_points_slider.rect.left, self.polled_points_slider.rect.top + 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono")
+        self.polled_points_label = make_text("Polled Points: 50", self.polled_points_slider.rect.left, self.polled_points_slider.rect.top + 5)
         self.polled_points_slider.register(self.update_polled_points)
 
         self.show_self = False

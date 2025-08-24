@@ -101,7 +101,6 @@ class Webcam:
             self._webcam_state: WebcamState = Webcam.DISCONNECTED
         logger.debug('finished disconnecting')
 
-
     def reconnect(self, start_reading: bool = False) -> None:
         # Disconnect the camera, and block until that is done, then reconnect.
         self.disconnect(block=True)
@@ -172,6 +171,7 @@ class Webcam:
         with self._data_lock:
             self._webcam_size = int(self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
             self._webcam_fps = int(self._webcam.get(cv2.CAP_PROP_FPS))
+            self._webcam.set(cv2.CAP_PROP_EXPOSURE, -5.0)
             self._webcam_state = Webcam.CONNECTED
 
             # print("cv2.CAP_PROP_FRAME_WIDTH))", self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)) # Static (for my camera)
@@ -389,21 +389,35 @@ class WebcamController:
         brightness: np.ndarray = rgb_to_l(frame[:, :, 0], frame[:, :, 1], frame[:, :, 2])
         # Get a numpy conditional mask (shaped array of 0s and 1s)
         thresholded_values = brightness >= threshold
-        # Get array of x and y indices
+        # Get the y idx and x idx of every pixel above the threshold
         bi = thresholded_values.nonzero()
-        # Create bright pixel list (Could use numpy to make this cleaner but that doesn't really matter)
-        brightest_pixels = [((x, frame.shape[0] - y), brightness[y, x]) for y, x in zip(bi[0], bi[1], strict = True)]
-        brightest_pixels.sort(reverse=True, key = lambda x: x[1])
-        self._cloud = brightest_pixels[:self._top_pixels]
-        average_pos = np.mean(np.array([x[0] for x in self._cloud]), axis=0)
+        
+        # Get the brightness values for each pixel position
+        brightest = brightness[bi]
+
+        # Turn the pixel indices into their positions by stiching and flipping the y coord
+        positions = np.c_[bi[::-1]]
+        positions[:, 1] = frame.shape[0] - positions[:, 1]
+
+        # sort by the brightest pixels, but get the indices needed so the brightness and positions can be sorted
+        sorting = np.argsort(brightest)[::-1]
+        
+        # get the top n brightest pixels
+        top = sorting[:self._top_pixels]
+        positions = positions[top]
+        brightest = brightest[top]
+
+        average_position = np.mean(positions, axis=0)
+        self._cloud = tuple(zip(positions, brightest))
 
         try:
-            if brightest_pixels:
-                self._highest_l = brightest_pixels[0][1]
+            if self._cloud:
+                self._highest_l = brightest[0]
             self._pixel_found = True
-            bp = (int(average_pos[0] * downsample * self.scaling), int(average_pos[1] * downsample * self.scaling))
+            bp = (int(average_position[0] * downsample * self.scaling), int(average_position[1] * downsample * self.scaling))
             return bp
-        except Exception as _:  # noqa: BLE001
+        except Exception as exception:  # noqa: BLE001
+            logger.exception(exception)
             self._pixel_found = False
             return None
 

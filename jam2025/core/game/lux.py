@@ -3,7 +3,7 @@ import arcade
 from arcade.types import Point2, RGBOrA255
 from pyglet.graphics import Batch
 from pyglet.shapes import Triangle
-from jam2025.lib.procedural_animator import ProceduralAnimator, SecondOrderAnimatorBase
+from jam2025.lib.procedural_animator import ProceduralAnimator
 from pyglet.math import Vec2
 
 from logging import getLogger
@@ -75,25 +75,15 @@ class Bubble:
 
 class PlayerRenderer:
     def __init__(self, character: Character):
-        self._ctx = arcade.get_window().ctx
         self.character = character
 
-        self.locus_a: Vec2 = None
-        self.locus_da: Vec2 = None
-        self.locus_b: Vec2 = None
-        self.locus_animator: SecondOrderAnimatorBase = None
-        self.bubble: Bubble = None
-
-    def setup(self) -> None:
         self.locus_a: Vec2 = Vec2()
         self.locus_da: Vec2 = Vec2()
         self.locus_b: Vec2 = Vec2()
-
         self.locus_animator = ProceduralAnimator(
             LOCUS_POS_FREQ, LOCUS_POS_DAMP, LOCUS_POS_RESP,
             self.locus_a, self.locus_b, Vec2()  # type: ignore -- Animators are poorly typed
         )
-
         self.bubble = Bubble(self.locus_a)
 
     def update(self, dt: float) -> None:

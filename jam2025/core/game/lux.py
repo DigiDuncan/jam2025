@@ -1,7 +1,8 @@
 from math import tau
 import arcade
 from arcade.types import Point2, RGBOrA255
-from pyglet import shapes
+from pyglet.graphics import Batch
+from pyglet.shapes import Triangle
 from jam2025.lib.procedural_animator import ProceduralAnimator, SecondOrderAnimatorBase
 from pyglet.math import Vec2
 
@@ -49,12 +50,12 @@ class BubblePoint:
 
 
 class Bubble:
-    def __init__(self, locus):
+    def __init__(self, locus: Point2):
         self.bubble_points = tuple(BubblePoint(tau * idx/BUBBLE_COUNT, locus) for idx in range(BUBBLE_COUNT))
         self.points = tuple(p.pos for p in self.bubble_points)
-        self._batch = shapes.Batch()
+        self._batch = Batch()
         self._triangle_indices = tuple((0, i, (i+1)%BUBBLE_COUNT) for i in range(1, BUBBLE_COUNT))
-        self._triangles = tuple(shapes.Triangle(*self.points[a], *self.points[b], *self.points[c], batch=self._batch) for a,b,c in self._triangle_indices)
+        self._triangles = tuple(Triangle(*self.points[a], *self.points[b], *self.points[c], batch=self._batch) for a,b,c in self._triangle_indices)
 
     def update(self, dt: float, locus: Point2, direction: Point2) -> None:
         self.points = tuple(p.update(dt, locus, Vec2(*direction)) for p in self.bubble_points)

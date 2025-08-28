@@ -1,4 +1,7 @@
-from arcade import View
+import math
+from random import random
+from arcade import Vec2, View
+from jam2025.core.game.bullet import BulletList, Bullet
 from jam2025.core.game.character import Character
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music
@@ -14,16 +17,22 @@ class PlayerTestView(View):
         self.character = Character()
         self.mouse_pos = (0, 0)
 
+        self.bullet_list = BulletList()
+
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
-        ...
+        angle = random() * math.tau
+        vel = Vec2.from_heading(angle, 100)
+        self.bullet_list.spawn_bullet(Bullet, self.mouse_pos, vel)
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)
 
     def on_update(self, delta_time: float) -> None:
         self.character.update(delta_time, self.mouse_pos)
+        self.bullet_list.update(delta_time)
 
     def on_draw(self) -> bool | None:
         self.clear()
         self.void.draw()
         self.character.draw()
+        self.bullet_list.draw()

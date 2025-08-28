@@ -19,6 +19,7 @@ class Character:
         return self._velocity
 
     def update(self, delta_time: float, position: Point2 | None = None) -> None:
+        self.renderer.update(delta_time)
         if position is not None:
             vel = (position[0] - self.position[0]) * delta_time, (position[1] - self.position[1]) * delta_time
             self.position = position

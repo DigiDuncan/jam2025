@@ -34,5 +34,7 @@ class PlayerTestView(View):
     def on_draw(self) -> bool | None:
         self.clear()
         self.void.draw()
-        self.character.draw()
         self.bullet_list.draw()
+
+        # !!!: Enabling this line makes Lux fight for their life.
+        # self.character.draw()

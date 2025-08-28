@@ -13,6 +13,7 @@ class Bullet:
         self.damage = damage
         self.live = True
         self.live_time = live_time
+        self.friendly = False
 
         self._creation_time = GLOBAL_CLOCK.time
 
@@ -25,6 +26,8 @@ class Bullet:
         self.sprite.position = pos
 
     def collide(self, character: Character) -> None:
+        if self.friendly:
+            return
         if point_in_circle(character.position, character.size / 2, self.sprite.position) and self.live:
             character.health -= self.damage
             self.live = False
@@ -47,10 +50,11 @@ class BulletList:
         self.bullets = bullets if bullets else []
         self.sprite_list = SpriteList()
 
-    def spawn_bullet(self, bullet_type: type[Bullet], pos: Point2, velocity: Point2 = (0, 0)) -> None:
+    def spawn_bullet(self, bullet_type: type[Bullet], pos: Point2, velocity: Point2 = (0, 0), friendly: bool = False) -> None:
         new_bullet = bullet_type()
         new_bullet.position = pos
         new_bullet.velocity = velocity
+        new_bullet.friendly = friendly
         self.bullets.append(new_bullet)
         self.sprite_list.append(new_bullet.sprite)
 

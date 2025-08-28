@@ -22,7 +22,7 @@ class PlayerTestView(View):
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
         angle = random() * math.tau
         vel = Vec2.from_heading(angle, 100)
-        self.bullet_list.spawn_bullet(Bullet, self.mouse_pos, vel)
+        self.bullet_list.spawn_bullet(Bullet, self.mouse_pos, vel, True)
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)

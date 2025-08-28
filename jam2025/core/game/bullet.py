@@ -3,7 +3,7 @@ from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
 import arcade
 
-from jam2025.lib.typing import Character
+from jam2025.core.game.character import Character
 from jam2025.lib.utils import point_in_circle
 
 class Bullet:

@@ -1,0 +1,29 @@
+from arcade import View
+from jam2025.core.game.character import Character
+from jam2025.core.void import Void
+from jam2025.data.loading import load_music
+
+
+class PlayerTestView(View):
+    def __init__(self) -> None:
+        super().__init__()
+        self.void = Void()
+        self.music = load_music("found-in-space-17")
+        self.player = self.music.play(volume = 0.0, loop = True)
+
+        self.character = Character()
+        self.mouse_pos = (0, 0)
+
+    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
+        ...
+
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
+        self.mouse_pos = (x, y)
+
+    def on_update(self, delta_time: float) -> None:
+        self.character.update(delta_time, self.mouse_pos)
+
+    def on_draw(self) -> bool | None:
+        self.clear()
+        self.void.draw()
+        self.character.draw()

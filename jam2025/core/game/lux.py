@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from math import tau
 import arcade
 from arcade.types import Point2, RGBOrA255
@@ -5,10 +7,11 @@ from pyglet.graphics import Batch
 from pyglet.shapes import Triangle
 from jam2025.lib.procedural_animator import ProceduralAnimator
 from pyglet.math import Vec2
-
+from typing import TYPE_CHECKING
 from logging import getLogger
 
-from jam2025.lib.typing import Character
+if TYPE_CHECKING:
+    from jam2025.core.game.character import Character
 
 logger = getLogger("jam2025")
 

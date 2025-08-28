@@ -2,15 +2,23 @@ import math
 import os
 import threading
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     # !!! This is genuinely unhinged. What even is this module? Why is it private???
     from _typeshed import SupportsRichComparison
 
 import arcade
-from arcade.types import HasAddSubMul
+from arcade.math import get_distance
+from arcade.types import HasAddSubMul, Point2
 from PIL import Image
 import numpy as np
+
+def nothing(*args: Any) -> None:
+    ...
+
+def point_in_circle(center: Point2, radius: float, point: Point2) -> bool:
+    d = get_distance(*center, *point)
+    return d <= radius
 
 def clamp[T: SupportsRichComparison](min_val: T, val: T, mav_val: T) -> T:
     """Clamp a `val` to be no lower than `minVal`, and no higher than `maxVal`."""

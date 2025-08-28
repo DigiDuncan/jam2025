@@ -12,7 +12,7 @@ class _Settings:
         self.screen_fps: int = 240
 
         self.device_id: int = 0
-        self.device_name: str = "Logitech Webcam C930e"
+        self.device_name: str = "USB Video Device"
 
         self.webcam_width: int = 1280
         self.webcam_height: int = 720

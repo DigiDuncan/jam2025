@@ -1,19 +1,11 @@
 from collections.abc import Callable
-from typing import Any
 import arcade
 from arcade.clock import GLOBAL_CLOCK
-from arcade.math import get_distance
 from arcade.types import Color, Point2
 
 from jam2025.lib.anim import ease_linear, perc
 from jam2025.lib.typing import NEVER
-
-def nothing(*args: Any) -> None:
-    ...
-
-def point_in_circle(center: Point2, radius: float, point: Point2) -> bool:
-    d = get_distance(*center, *point)
-    return d <= radius
+from jam2025.lib.utils import nothing, point_in_circle
 
 class HoverButton:
     def __init__(self, x: float, y: float, size: int, thickness: int, hold_time: float = 1.5, cooldown_time: float = 1.0,

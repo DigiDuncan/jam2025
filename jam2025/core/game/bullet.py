@@ -1,18 +1,10 @@
-from typing import Protocol
-
 from arcade import SpriteCircle, SpriteList
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
 import arcade
 
+from jam2025.lib.typing import Character
 from jam2025.lib.utils import point_in_circle
-
-# !!! TEMPORARY
-class Character(Protocol):
-    position: Point2
-    size: float  # The character is a circle
-    health: float
-
 
 class Bullet:
     def __init__(self, radius: float = 10, damage: float = 1, live_time: float = 10) -> None:

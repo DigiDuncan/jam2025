@@ -37,4 +37,4 @@ class PlayerTestView(View):
         self.bullet_list.draw()
 
         # !!!: Enabling this line makes Lux fight for their life.
-        # self.character.draw()
+        self.character.draw()

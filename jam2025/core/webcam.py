@@ -8,23 +8,29 @@ from arcade import Vec2
 from arcade.types import Point2
 from PIL import Image
 
+from .config import CONFIG
+
 from jam2025.lib.logging import logger
 from jam2025.lib.procedural_animator import SecondOrderAnimatorKClamped
 from jam2025.lib.settings import SETTINGS
 from jam2025.lib.utils import frame_data_to_image, map_range, rgb_to_l
 
-from pygrabber.dshow_graph import FilterGraph
+if CONFIG.is_windows:
+    from pygrabber.dshow_graph import FilterGraph
 
-# !: This whole thing is full of type errors, but do you care?
+    # !: This whole thing is full of type errors, but do you care?
 
-def get_available_cameras() -> dict[int, str]:
-    """https://stackoverflow.com/questions/70886225/get-camera-device-name-and-port-for-opencv-videostream-python"""
-    devices = FilterGraph().get_input_devices()
-    available_cameras = {}
-    for device_index, device_name in enumerate(devices):
-        available_cameras[device_index] = device_name
-    return available_cameras
-
+    def get_available_cameras() -> dict[int, str]:
+        """https://stackoverflow.com/questions/70886225/get-camera-device-name-and-port-for-opencv-videostream-python"""
+        devices = FilterGraph().get_input_devices()
+        available_cameras = {}
+        for device_index, device_name in enumerate(devices):
+            available_cameras[device_index] = device_name
+        return available_cameras
+else:
+    FilterGraph = None
+    def get_available_cameras() -> dict[int, str]:
+        return {}
 
 type WebcamState = int
 class Webcam:

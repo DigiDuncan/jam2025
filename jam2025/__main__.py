@@ -1,5 +1,5 @@
-import jam2025.main
+from .launch import launch
 
 if __name__ == "__main__":
-    jam2025.main.main()
+    launch()
 

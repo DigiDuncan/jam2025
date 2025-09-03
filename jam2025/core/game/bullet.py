@@ -138,5 +138,10 @@ class BulletPattern:
         return returned_patterns
 
 PATTERNS: dict[str, BulletPattern] = {
-    "right": BulletPattern(0.5, [BulletEvent(0, 1, 0)])
+    "right": BulletPattern(0.5, [BulletEvent(0, 1, 0)]),
+    "top": BulletPattern(0.5, [BulletEvent(0, 0, 1)]),
+    "bottom": BulletPattern(0.5, [BulletEvent(0, 0, -1)]),
+    "left": BulletPattern(0.5, [BulletEvent(0, -1, 0)]),
+    "fourway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0)]),
+    "fourwayspin": BulletPattern(0.5, [BulletEvent(0, 1, 0, angular_speed = 0.5), BulletEvent(0, 0, 1, angular_speed = 0.5), BulletEvent(0, 0, -1, angular_speed = 0.5), BulletEvent(0, -1, 0, angular_speed = 0.5)])
 }

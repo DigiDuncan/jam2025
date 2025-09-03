@@ -93,6 +93,8 @@ class BulletEmitter:
         self.bullet_type = bullet_type
         self.bullet_list = bullet_list
 
+        self.rotation = 0
+
         self.current_pattern: BulletPattern | None = starting_pattern
         self.current_pattern_start_time: Seconds = GLOBAL_CLOCK.time
 
@@ -104,8 +106,10 @@ class BulletEmitter:
         if not self.current_pattern:
             return
         new_events = self.current_pattern.get_events(GLOBAL_CLOCK.time - self.current_pattern_start_time)
+        current_rot = Vec2.from_heading(self.rotation)
         for e in new_events:
-            self.bullet_list.spawn_bullet(self.bullet_type, self.sprite.position, Vec2(e.direction_x, e.direction_y).normalize(),
+            self.bullet_list.spawn_bullet(self.bullet_type, self.sprite.position,
+                                          Vec2(e.direction_x + current_rot.x, e.direction_y + current_rot.y).normalize(),
                                           e.speed, e.angular_speed)
 
     def draw(self) -> None:
@@ -143,5 +147,8 @@ PATTERNS: dict[str, BulletPattern] = {
     "bottom": BulletPattern(0.5, [BulletEvent(0, 0, -1)]),
     "left": BulletPattern(0.5, [BulletEvent(0, -1, 0)]),
     "fourway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0)]),
-    "fourwayspin": BulletPattern(0.5, [BulletEvent(0, 1, 0, angular_speed = 0.5), BulletEvent(0, 0, 1, angular_speed = 0.5), BulletEvent(0, 0, -1, angular_speed = 0.5), BulletEvent(0, -1, 0, angular_speed = 0.5)])
+    "fourwayspin": BulletPattern(0.5, [BulletEvent(0, 1, 0, angular_speed = 0.5),
+                                       BulletEvent(0, 0, 1, angular_speed = 0.5),
+                                       BulletEvent(0, 0, -1, angular_speed = 0.5),
+                                       BulletEvent(0, -1, 0, angular_speed = 0.5)])
 }

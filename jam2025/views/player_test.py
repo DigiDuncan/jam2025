@@ -20,7 +20,7 @@ class PlayerTestView(View):
         self.bullet_list = BulletList()
         self.emitter = BulletEmitter(self.window.center, self.bullet_list)
 
-        self.emitter.set_pattern(PATTERNS["fourway"])
+        self.emitter.set_pattern(PATTERNS["fourwaystagger"])
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
         angle = Vec2.from_heading(random() * math.tau)

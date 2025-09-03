@@ -1,19 +1,28 @@
-from arcade import SpriteCircle, SpriteList
+from __future__ import annotations
+
+from dataclasses import dataclass
+import math
+from typing import Any
+from arcade import SpriteCircle, SpriteList, Vec2
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
 import arcade
 
 from jam2025.core.game.character import Character
+from jam2025.lib.typing import NEVER, Seconds
 from jam2025.lib.utils import point_in_circle
 
 class Bullet:
-    def __init__(self, radius: float = 10, damage: float = 1, live_time: float = 10) -> None:
+    def __init__(self, radius: float = 10, damage: float = 1, live_time: float = 10, owner: Any = None) -> None:
         self.sprite = SpriteCircle(radius, arcade.color.RED)  #type: ignore -- float -> int
-        self.velocity: Point2 = (0, 0)
         self.damage = damage
         self.live = True
         self.live_time = live_time
-        self.friendly = False
+        self.owner: Any = owner
+
+        self.speed: float = 100
+        self.angular_speed: float = 0
+        self.direction = Vec2.from_heading(0).normalize()
 
         self._creation_time = GLOBAL_CLOCK.time
 
@@ -26,7 +35,7 @@ class Bullet:
         self.sprite.position = pos
 
     def collide(self, character: Character) -> None:
-        if self.friendly:
+        if self.owner is character:
             return
         if point_in_circle(character.position, character.size / 2, self.sprite.position) and self.live:
             character.health -= self.damage
@@ -34,9 +43,9 @@ class Bullet:
 
     def update(self, delta_time: float) -> None:
         """Override this for non-straight bullets."""
+        self.direction = Vec2.from_heading(self.direction.heading() + (delta_time * self.angular_speed * math.tau))
 
-        dx = self.velocity[0] * delta_time
-        dy = self.velocity[1] * delta_time
+        dx, dy = self.direction * self.speed * delta_time
         self.sprite.position = (self.sprite.position[0] + dx, self.sprite.position[1] + dy)
 
         if self._creation_time + self.live_time < GLOBAL_CLOCK.time:
@@ -50,11 +59,15 @@ class BulletList:
         self.bullets = bullets if bullets else []
         self.sprite_list = SpriteList()
 
-    def spawn_bullet(self, bullet_type: type[Bullet], pos: Point2, velocity: Point2 = (0, 0), friendly: bool = False) -> None:
+    def spawn_bullet(self, bullet_type: type[Bullet], pos: Point2, direction: Point2 = (0, 0),
+                     speed: float = 100, angular_speed: float = 0,
+                     owner: Any = None) -> None:
         new_bullet = bullet_type()
         new_bullet.position = pos
-        new_bullet.velocity = velocity
-        new_bullet.friendly = friendly
+        new_bullet.direction = Vec2(*direction)
+        new_bullet.speed = speed
+        new_bullet.angular_speed = angular_speed
+        new_bullet.owner = owner
         self.bullets.append(new_bullet)
         self.sprite_list.append(new_bullet.sprite)
 
@@ -70,3 +83,60 @@ class BulletList:
         self.sprite_list.draw()
         for bullet in self.bullets:
             bullet.draw()
+
+class BulletEmitter:
+    def __init__(self, pos: Point2, bullet_list: BulletList, bullet_type: type[Bullet] = Bullet, starting_pattern: BulletPattern | None = None) -> None:
+        self.sprite = SpriteCircle(10, arcade.color.GREEN)
+        self.sprite.position = pos
+        self.sprite_list = SpriteList()
+        self.sprite_list.append(self.sprite)
+        self.bullet_type = bullet_type
+        self.bullet_list = bullet_list
+
+        self.current_pattern: BulletPattern | None = starting_pattern
+        self.current_pattern_start_time: Seconds = GLOBAL_CLOCK.time
+
+    def set_pattern(self, new_pattern: BulletPattern | None) -> None:
+        self.current_pattern = new_pattern
+        self.current_pattern_start_time = GLOBAL_CLOCK.time
+
+    def update(self, delta_time: float) -> None:
+        if not self.current_pattern:
+            return
+        new_events = self.current_pattern.get_events(GLOBAL_CLOCK.time - self.current_pattern_start_time)
+        for e in new_events:
+            self.bullet_list.spawn_bullet(self.bullet_type, self.sprite.position, Vec2(e.direction_x, e.direction_y).normalize(),
+                                          e.speed, e.angular_speed)
+
+    def draw(self) -> None:
+        self.sprite_list.draw()
+
+@dataclass
+class BulletEvent:
+    time: Seconds
+    direction_x: float
+    direction_y: float
+    speed: float = 100
+    angular_speed: float = 0
+
+class BulletPattern:
+    def __init__(self, loop_time: Seconds, pattern: list[BulletEvent]) -> None:
+        self.loop_time = loop_time
+        self.pattern = pattern
+
+        self._current_pattern = pattern.copy()
+        self._last_pattern_time = NEVER
+
+    def get_events(self, time: Seconds) -> list[BulletEvent]:
+        current_pattern_time = time % self.loop_time
+        if self._last_pattern_time > current_pattern_time:
+            self._current_pattern = self.pattern.copy()
+        returned_patterns = [p for p in self._current_pattern if p.time <= current_pattern_time]
+        for p in returned_patterns:
+            self._current_pattern.remove(p)
+        self._last_pattern_time = current_pattern_time
+        return returned_patterns
+
+PATTERNS: dict[str, BulletPattern] = {
+    "right": BulletPattern(0.5, [BulletEvent(0, 1, 0)])
+}

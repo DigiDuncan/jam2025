@@ -130,6 +130,6 @@ COLORS: Hexes = (0x0a0809, 0x110e0f, 0x231d20, 0x3d3436, 0x5d5153, 0x827373, 0xa
 
 def get_color(hue: Range12, lightness: Range10, saturation: Range10) -> Color:
     """from https://noacubestudio.github.io/blog.html"""
-    idx = hue * 100 + lightness * 10 + saturation
+    idx = hue * 100 + saturation * 10 + lightness
     hex_code = COLORS[idx]
     return Color.from_uint24(hex_code)

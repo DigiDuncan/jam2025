@@ -9,6 +9,7 @@ from arcade.types import Point2
 import arcade
 
 from jam2025.core.game.character import Character
+from jam2025.lib import noa
 from jam2025.lib.typing import NEVER, Seconds
 from jam2025.lib.utils import point_in_circle
 
@@ -53,6 +54,15 @@ class Bullet:
 
     def draw(self) -> None:
         ...
+
+class RainbowBullet(Bullet):
+    COLOR_IDX = 0
+
+    def __init__(self, radius: Seconds = 10, damage: Seconds = 1, live_time: Seconds = 10, owner: Any = None) -> None:
+        super().__init__(radius, damage, live_time, owner)
+        self.sprite.color = noa.get_color(self.__class__.COLOR_IDX, 8, 8)
+        self.__class__.COLOR_IDX += 1
+        self.__class__.COLOR_IDX %= 12
 
 class BulletList:
     def __init__(self, bullets: list[Bullet] | None = None) -> None:

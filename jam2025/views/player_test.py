@@ -1,7 +1,7 @@
 import math
 from random import random
 from arcade import Vec2, View
-from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, Bullet
+from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, Bullet, RainbowBullet
 from jam2025.core.game.character import Character
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music
@@ -18,7 +18,7 @@ class PlayerTestView(View):
         self.mouse_pos = (0, 0)
 
         self.bullet_list = BulletList()
-        self.emitter = BulletEmitter(self.window.center, self.bullet_list)
+        self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
 
         self.emitter.set_pattern(PATTERNS["fourwaystagger"])
 

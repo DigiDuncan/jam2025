@@ -20,7 +20,7 @@ class PlayerTestView(View):
         self.bullet_list = BulletList()
         self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
 
-        self.emitter.set_pattern(PATTERNS["fourwaystagger"])
+        self.emitter.set_pattern(PATTERNS["chaos"])
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
         angle = Vec2.from_heading(random() * math.tau)
@@ -28,6 +28,8 @@ class PlayerTestView(View):
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)
+        # v = Vec2(x, y) - self.emitter.sprite.position
+        # self.emitter.direction = v.heading()
 
     def on_update(self, delta_time: float) -> None:
         self.character.update(delta_time, self.mouse_pos)
@@ -40,5 +42,4 @@ class PlayerTestView(View):
         self.emitter.draw()
         self.bullet_list.draw()
 
-        # !!!: Enabling this line makes Lux fight for their life.
         self.character.draw()

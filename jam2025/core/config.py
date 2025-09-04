@@ -17,7 +17,6 @@ class WindowConfig:
         self.window_fps = window_fps
         self.window_tps = window_tps
 
-        print(platform)
         self.platform = platform
 
 
@@ -42,7 +41,7 @@ class WindowConfig:
             f"[webcam]\n"
             f"name=\"{self.webcam_name}\"\n"
             f"[window]\n"
-                f"initial_view=\"{self.initial_view}\"\n"
+            f"initial_view=\"{self.initial_view}\"\n"
             f"width={self.window_width}\n"
             f"height={self.window_height}\n"
             f"fps={self.window_fps}\n"

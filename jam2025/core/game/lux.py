@@ -4,7 +4,7 @@ from math import tau
 import arcade
 from arcade.types import Point2, RGBOrA255
 from pyglet.graphics import Batch
-from pyglet.shapes import Triangle
+from pyglet.shapes import Triangle, Circle
 from jam2025.lib.procedural_animator import ProceduralAnimator, SecondOrderAnimator
 from pyglet.math import Vec2
 from typing import TYPE_CHECKING
@@ -74,7 +74,7 @@ class LuxSimplified:
 
 class BubblePoint:
     def __init__(self, angle: float, locus: Point2):
-        self.original_dir = Vec2.from_polar(1.0, angle)
+        self.original_dir = Vec2.from_polar(angle, 1.0)
         self.original_offset = self.original_dir * RADIUS
         pos = locus + self.original_offset
 
@@ -87,7 +87,6 @@ class BubblePoint:
         target = new_locus + self.original_offset
         dot = new_dir.dot(self.original_dir)
         self.animator.update_values(new_frequency=3.0*(0.5*dot + 0.5) + 3.0, new_response=dot)
-
         return self.animator.update(dt, target)
 
     @property
@@ -97,18 +96,17 @@ class BubblePoint:
 
 class Bubble:
     def __init__(self, locus: Point2):
-        self.bubble_points = tuple(BubblePoint(tau * idx/BUBBLE_COUNT, locus) for idx in range(BUBBLE_COUNT))
-        self.points = tuple(p.pos for p in self.bubble_points)
+        self.bubble_points = tuple(BubblePoint(float(angle), locus) for angle in np.linspace(0, 2 * np.pi, BUBBLE_COUNT, False))
+        self.points: tuple[Vec2, ...] = tuple(p.pos for p in self.bubble_points)
         self._batch = Batch()
-        self._triangle_indices = tuple((0, i, (i+1)%BUBBLE_COUNT) for i in range(1, BUBBLE_COUNT))
+        self._triangle_indices = tuple((0, i, (i+1)) for i in range(1, BUBBLE_COUNT-1))
         self._triangles = tuple(Triangle(*self.points[a], *self.points[b], *self.points[c], batch=self._batch) for a,b,c in self._triangle_indices)
 
-    def update(self, dt: float, locus: Point2, direction: Point2) -> None:
-        self.points = tuple(p.update(dt, locus, Vec2(*direction)) for p in self.bubble_points)
+    def update(self, dt: float, locus: Point2, direction: Vec2) -> None:
+        self.points = tuple(p.update(dt, locus, direction) for p in self.bubble_points)
 
     def draw(self, color: RGBOrA255) -> None:
-        for idx in range(len(self._triangle_indices)):
-            triangle = self._triangles[idx]
+        for idx, triangle in enumerate(self._triangles):
             if triangle.color != color:
                 triangle.color = color
 
@@ -116,13 +114,12 @@ class Bubble:
             triangle.x, triangle.y = self.points[a]
             triangle.x2, triangle.y2 = self.points[b]
             triangle.x3, triangle.y3 = self.points[c]
+
         self._batch.draw()
 
 
 class PlayerRenderer:
-    def __init__(self, character: Character):
-        self.character = character
-
+    def __init__(self):
         self.locus_a: Vec2 = Vec2()
         self.locus_da: Vec2 = Vec2()
         self.locus_b: Vec2 = Vec2()
@@ -132,12 +129,12 @@ class PlayerRenderer:
         )
         self.bubble = Bubble(self.locus_a)
 
-    def update(self, dt: float) -> None:
-        new_a = self.character.position
-        self.locus_da = (new_a - self.locus_a)
+    def update(self, dt: float, new_a: Vec2) -> None:
+        self.locus_da = (new_a - self.locus_a) / dt
         self.locus_a = Vec2(*new_a)
         self.locus_b = self.locus_animator.update(dt, self.locus_a, self.locus_da)
-        self.bubble.update(dt, self.locus_a, Vec2(*self.character.velocity).normalize())
+        self.bubble.update(dt, self.locus_a, self.locus_da.normalize())
 
     def draw(self) -> None:
         self.bubble.draw(arcade.color.WHITE)
+

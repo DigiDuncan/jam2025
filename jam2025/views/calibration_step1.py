@@ -39,7 +39,6 @@ class MouseCalibrationView(View):
         self.webcam.sprite.size = (self.size[0] / 2, self.size[1] / 2)
         self.webcam.sprite.center_x = self.center_x
         self.webcam.sprite.top = self.window.rect.top - 100
-        print(self.webcam.sprite.position)
 
         popup_rect = XYWH(self.center_x, self.center_y, 128, 128)
         self.popup = Popup(popup_rect, fade_in = 1.0, hold = 3.0, fade_out = 1.0)

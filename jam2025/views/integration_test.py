@@ -1,0 +1,47 @@
+from arcade import View, LBWH
+
+from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet
+from jam2025.core.game.character import Character
+
+from jam2025.core.void import Void
+from jam2025.data.loading import load_music
+from jam2025.core.webcam import WebcamController
+
+class IntegrationTestView(View):
+    
+    def __init__(self) -> None:
+        View.__init__(self)
+        self.void = Void()
+        self.music = load_music("found-in-space-17")
+        self.player = self.music.play(volume = 0.05, loop = True)
+        
+        self.character = Character()
+
+        self.bullet_list = BulletList()
+        self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
+
+        self.emitter.set_pattern(PATTERNS["fourwayspin"])
+
+        self.webcam = WebcamController(0, region=self.window.rect, bounds=LBWH(0.9, 0.1, -0.8, 0.8))
+        self.webcam.debug = True
+        self.webcam.sprite.size = self.size
+        self.webcam.sprite.position = self.center
+
+    def on_update(self, delta_time: float) -> bool | None:
+        if self.webcam.webcam.connected:
+            self.webcam.update(delta_time)
+            self.character.update(delta_time, self.webcam.mapped_cursor)
+        else:
+            self.character.update(delta_time, self.center)
+        self.bullet_list.update(delta_time)
+        self.emitter.update(delta_time)
+
+    def on_draw(self) -> bool | None:
+        self.clear()
+        self.void.draw()
+        if self.webcam.webcam.connected:
+            self.webcam.draw()
+
+        self.bullet_list.draw()
+        self.emitter.draw()
+        self.character.draw()

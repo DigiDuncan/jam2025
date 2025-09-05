@@ -8,6 +8,7 @@ from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
 import arcade
 
+from jam2025.data.loading import load_sound
 from jam2025.core.game.character import Character
 from jam2025.lib import noa
 from jam2025.lib.typing import NEVER, Seconds
@@ -108,6 +109,8 @@ class BulletEmitter:
 
         self.direction = 0.0
 
+        self.sound = load_sound('blast')
+
     def set_pattern(self, new_pattern: BulletPattern | None) -> None:
         self.current_pattern = new_pattern
         self.current_pattern_start_time = GLOBAL_CLOCK.time
@@ -116,11 +119,14 @@ class BulletEmitter:
         if not self.current_pattern:
             return
         new_events = self.current_pattern.get_events(GLOBAL_CLOCK.time - self.current_pattern_start_time)
+        if new_events:
+            self.sound.play(0.3)
         for e in new_events:
             v = Vec2(e.direction_x, e.direction_y).normalize()
             v = v.rotate(self.direction)
+            angular_speed = 0 if not e.radius else (e.speed / (math.tau * e.radius))
             self.bullet_list.spawn_bullet(self.bullet_type, self.sprite.position,
-                                          v, e.speed, e.angular_speed)
+                                          v, e.speed, angular_speed)
 
     def draw(self) -> None:
         self.sprite_list.draw()
@@ -132,7 +138,7 @@ class BulletEvent:
     direction_x: float
     direction_y: float
     speed: float = 100
-    angular_speed: float = 0
+    radius: float = 0
 
 class BulletPattern:
     def __init__(self, loop_time: Seconds, pattern: list[BulletEvent]) -> None:
@@ -158,10 +164,10 @@ PATTERNS: dict[str, BulletPattern] = {
     "bottom": BulletPattern(0.5, [BulletEvent(0, 0, -1)]),
     "left": BulletPattern(0.5, [BulletEvent(0, -1, 0)]),
     "fourway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0)]),
-    "fourwayspin": BulletPattern(0.5, [BulletEvent(0, 1, 0, angular_speed = 100 / (math.tau * 400)),
-                                       BulletEvent(0, 0, 1, angular_speed = 100 / (math.tau * 400)),
-                                       BulletEvent(0, 0, -1, angular_speed = 100 / (math.tau * 400)),
-                                       BulletEvent(0, -1, 0, angular_speed = 100 / (math.tau * 400))]),
+    "fourwayspin": BulletPattern(0.5, [BulletEvent(0, 1, 0, radius = 200),
+                                       BulletEvent(0, 0, 1, radius = 200),
+                                       BulletEvent(0, 0, -1, radius = 200),
+                                       BulletEvent(0, -1, 0, radius = 200)]),
     "fourwaystagger": BulletPattern(0.8, [BulletEvent(0, 0, 1),
                                           BulletEvent(0.2, 0, 0),
                                           BulletEvent(0.4, 0, -1),
@@ -169,38 +175,34 @@ PATTERNS: dict[str, BulletPattern] = {
     "chaos": BulletPattern(
         math.pi, 
         [
-            BulletEvent(0*math.pi/8,  math.cos(0*math.tau/8+0.0),  math.sin(0*math.tau/8+0.0)),
-            BulletEvent(0*math.pi/8, -math.cos(0*math.tau/8+0.1), -math.sin(0*math.tau/8+0.1)),
-            BulletEvent(0*math.pi/8, -math.sin(0*math.tau/8+0.2),  math.cos(0*math.tau/8+0.2)),
-            BulletEvent(0*math.pi/8,  math.sin(0*math.tau/8+0.3), -math.cos(0*math.tau/8+0.3)),
-            BulletEvent(1*math.pi/8,  math.cos(1*math.tau/8+0.0),  math.sin(1*math.tau/8+0.0)),
-            BulletEvent(1*math.pi/8, -math.cos(1*math.tau/8+0.1), -math.sin(1*math.tau/8+0.1)),
-            BulletEvent(1*math.pi/8, -math.sin(1*math.tau/8+0.2),  math.cos(1*math.tau/8+0.2)),
-            BulletEvent(1*math.pi/8,  math.sin(1*math.tau/8+0.3), -math.cos(1*math.tau/8+0.3)),
-            BulletEvent(2*math.pi/8,  math.cos(2*math.tau/8+0.0),  math.sin(2*math.tau/8+0.0)),
-            BulletEvent(2*math.pi/8, -math.cos(2*math.tau/8+0.1), -math.sin(2*math.tau/8+0.1)),
-            BulletEvent(2*math.pi/8, -math.sin(2*math.tau/8+0.2),  math.cos(2*math.tau/8+0.2)),
-            BulletEvent(2*math.pi/8,  math.sin(2*math.tau/8+0.3), -math.cos(2*math.tau/8+0.3)),
-            BulletEvent(3*math.pi/8,  math.cos(3*math.tau/8+0.0),  math.sin(3*math.tau/8+0.0)),
-            BulletEvent(3*math.pi/8, -math.cos(3*math.tau/8+0.1), -math.sin(3*math.tau/8+0.1)),
-            BulletEvent(3*math.pi/8, -math.sin(3*math.tau/8+0.2),  math.cos(3*math.tau/8+0.2)),
-            BulletEvent(3*math.pi/8,  math.sin(3*math.tau/8+0.3), -math.cos(3*math.tau/8+0.3)),
-            BulletEvent(4*math.pi/8,  math.cos(4*math.tau/8+0.0),  math.sin(4*math.tau/8+0.0)),
-            BulletEvent(4*math.pi/8, -math.cos(4*math.tau/8+0.1), -math.sin(4*math.tau/8+0.1)),
-            BulletEvent(4*math.pi/8, -math.sin(4*math.tau/8+0.2),  math.cos(4*math.tau/8+0.2)),
-            BulletEvent(4*math.pi/8,  math.sin(4*math.tau/8+0.3), -math.cos(4*math.tau/8+0.3)),
-            BulletEvent(5*math.pi/8,  math.cos(5*math.tau/8+0.0),  math.sin(5*math.tau/8+0.0)),
-            BulletEvent(5*math.pi/8, -math.cos(5*math.tau/8+0.1), -math.sin(5*math.tau/8+0.1)),
-            BulletEvent(5*math.pi/8, -math.sin(5*math.tau/8+0.2),  math.cos(5*math.tau/8+0.2)),
-            BulletEvent(5*math.pi/8,  math.sin(5*math.tau/8+0.3), -math.cos(5*math.tau/8+0.3)),
-            BulletEvent(6*math.pi/8,  math.cos(6*math.tau/8+0.0),  math.sin(6*math.tau/8+0.0)),
-            BulletEvent(6*math.pi/8, -math.cos(6*math.tau/8+0.1), -math.sin(6*math.tau/8+0.1)),
-            BulletEvent(6*math.pi/8, -math.sin(6*math.tau/8+0.2),  math.cos(6*math.tau/8+0.2)),
-            BulletEvent(6*math.pi/8,  math.sin(6*math.tau/8+0.3), -math.cos(6*math.tau/8+0.3)),
-            BulletEvent(7*math.pi/8,  math.cos(7*math.tau/8+0.0),  math.sin(7*math.tau/8+0.0)),
-            BulletEvent(7*math.pi/8, -math.cos(7*math.tau/8+0.1), -math.sin(7*math.tau/8+0.1)),
-            BulletEvent(7*math.pi/8, -math.sin(7*math.tau/8+0.2),  math.cos(7*math.tau/8+0.2)),
-            BulletEvent(7*math.pi/8,  math.sin(7*math.tau/8+0.3), -math.cos(7*math.tau/8+0.3)),
+            BulletEvent(0*math.pi/7,  math.cos(0*math.tau/7),  math.sin(0*math.tau/7)),
+            BulletEvent(0*math.pi/7, -math.cos(0*math.tau/7), -math.sin(0*math.tau/7)),
+            BulletEvent(0*math.pi/7, -math.sin(0*math.tau/7),  math.cos(0*math.tau/7)),
+            BulletEvent(0*math.pi/7,  math.sin(0*math.tau/7), -math.cos(0*math.tau/7)),
+            BulletEvent(1*math.pi/7,  math.cos(1*math.tau/7),  math.sin(1*math.tau/7)),
+            BulletEvent(1*math.pi/7, -math.cos(1*math.tau/7), -math.sin(1*math.tau/7)),
+            BulletEvent(1*math.pi/7, -math.sin(1*math.tau/7),  math.cos(1*math.tau/7)),
+            BulletEvent(1*math.pi/7,  math.sin(1*math.tau/7), -math.cos(1*math.tau/7)),
+            BulletEvent(2*math.pi/7,  math.cos(2*math.tau/7),  math.sin(2*math.tau/7)),
+            BulletEvent(2*math.pi/7, -math.cos(2*math.tau/7), -math.sin(2*math.tau/7)),
+            BulletEvent(2*math.pi/7, -math.sin(2*math.tau/7),  math.cos(2*math.tau/7)),
+            BulletEvent(2*math.pi/7,  math.sin(2*math.tau/7), -math.cos(2*math.tau/7)),
+            BulletEvent(3*math.pi/7,  math.cos(3*math.tau/7),  math.sin(3*math.tau/7)),
+            BulletEvent(3*math.pi/7, -math.cos(3*math.tau/7), -math.sin(3*math.tau/7)),
+            BulletEvent(3*math.pi/7, -math.sin(3*math.tau/7),  math.cos(3*math.tau/7)),
+            BulletEvent(3*math.pi/7,  math.sin(3*math.tau/7), -math.cos(3*math.tau/7)),
+            BulletEvent(4*math.pi/7,  math.cos(4*math.tau/7),  math.sin(4*math.tau/7)),
+            BulletEvent(4*math.pi/7, -math.cos(4*math.tau/7), -math.sin(4*math.tau/7)),
+            BulletEvent(4*math.pi/7, -math.sin(4*math.tau/7),  math.cos(4*math.tau/7)),
+            BulletEvent(4*math.pi/7,  math.sin(4*math.tau/7), -math.cos(4*math.tau/7)),
+            BulletEvent(5*math.pi/7,  math.cos(5*math.tau/7),  math.sin(5*math.tau/7)),
+            BulletEvent(5*math.pi/7, -math.cos(5*math.tau/7), -math.sin(5*math.tau/7)),
+            BulletEvent(5*math.pi/7, -math.sin(5*math.tau/7),  math.cos(5*math.tau/7)),
+            BulletEvent(5*math.pi/7,  math.sin(5*math.tau/7), -math.cos(5*math.tau/7)),
+            BulletEvent(6*math.pi/7,  math.cos(6*math.tau/7),  math.sin(6*math.tau/7)),
+            BulletEvent(6*math.pi/7, -math.cos(6*math.tau/7), -math.sin(6*math.tau/7)),
+            BulletEvent(6*math.pi/7, -math.sin(6*math.tau/7),  math.cos(6*math.tau/7)),
+            BulletEvent(6*math.pi/7,  math.sin(6*math.tau/7), -math.cos(6*math.tau/7)),
         ]
     )
 }

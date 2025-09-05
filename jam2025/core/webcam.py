@@ -155,15 +155,18 @@ class Webcam:
 
     def _poll(self) -> None:
         logger.debug('thread started')
-        with self._data_lock:
-            try:
-                self._webcam = cv2.VideoCapture(self._index)
-                if not self._webcam.isOpened():
-                    raise ValueError('Cannot connect to webcam')
-            except Exception as e:
+        try:
+            webcam = cv2.VideoCapture(self._index)
+            if not webcam.isOpened():
+                raise ValueError('Cannot connect to webcam')
+        except Exception as e:
+            with self._data_lock:
                 self._webcam_state = Webcam.ERROR
-                raise e
-            logger.debug('connected to webcam')
+            raise e
+        logger.debug('connected to webcam')
+
+        with self._data_lock:
+            self._webcam = webcam
 
         # We have to exit the data lock to disconnect because it locks internally
         # and if the thread is already holding the lock it will brick.
@@ -174,10 +177,15 @@ class Webcam:
             self._disconnect()
             return
 
+        self._webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self._webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+        size = int(self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps =  int(self._webcam.get(cv2.CAP_PROP_FPS))
+
         with self._data_lock:
-            self._webcam_size = int(self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            self._webcam_fps = int(self._webcam.get(cv2.CAP_PROP_FPS))
-            self._webcam.set(cv2.CAP_PROP_EXPOSURE, -5.0)
+            self._webcam_size = size
+            self._webcam_fps = fps
             self._webcam_state = Webcam.CONNECTED
 
             # print("cv2.CAP_PROP_FRAME_WIDTH))", self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)) # Static (for my camera)
@@ -254,16 +262,11 @@ class Webcam:
 
 
 class WebcamController:
-    def __init__(self, index: int = 0, scaling: int = 1) -> None:
+    def __init__(self, index: int = 0, scaling: int = 1, region: arcade.Rect | None = None, bounds: arcade.Rect | None = None) -> None:
         self.webcam = Webcam(index)
         self.webcam.connect(start_reading=True)
 
-        # Cludge to block until the webcam is active. I will remove later
-        while True:
-            if self.webcam.connected:
-                break
-
-        self.name = "USB Video Device"
+        self.name = CONFIG.webcam_name
         self.scaling = scaling
 
         size = self.size
@@ -271,10 +274,14 @@ class WebcamController:
         self.sprite = arcade.SpriteSolidColor(*size, *center)  # type: ignore -- omg this float/int shit is killing me
         self.crunchy_sprite = arcade.SpriteSolidColor(*size, *center)  # type: ignore -- ditto
 
+        self.region: arcade.Rect = region or arcade.XYWH(*center, *size)
+        self.bounds: arcade.Rect = bounds or arcade.LRBT(0.0, 1.0, 0.0, 1.0)
+        self.capture: arcade.Rect = arcade.LBWH(0, 0, size[0], size[1])
+
         self.spritelist = arcade.SpriteList()
         self.spritelist.append(self.sprite)
 
-        self._fetched_frame: np.ndarray | None = np.zeros((self.webcam.size[0], self.webcam.size[1], 3), np.int64)
+        self._fetched_frame: np.ndarray | None = np.zeros((1, 1, 3), np.int64)
         self._pixel_found = False
         self._raw_cursor: tuple[int, int] | None = None
         self._cursor: tuple[int, int] | None = None
@@ -363,12 +370,48 @@ class WebcamController:
     def _refresh_animator(self) -> None:
         self.animator = SecondOrderAnimatorKClamped(self._frequency, self._dampening, self._response, Vec2(*self._raw_cursor) if self._raw_cursor else Vec2(0, 0), Vec2(*self._raw_cursor) if self._raw_cursor else Vec2(0, 0), 0)
 
+    def map_position(self, position: Point2) -> Vec2:
+        x, y = position
+
+        rl, rb = self.region.bottom_left
+        rw, rh = self.region.size
+
+        bl, bb = self.bounds.bottom_left
+        bw, bh = self.bounds.size
+
+        cw, ch = self.capture.size
+
+        xf = rl + rw / bw * (x / cw - bl)
+        yf = rb + rh / bh * (y / ch - bb)
+        return Vec2(xf, yf)
+
+    def unmap_position(self, position: Point2) -> Vec2:
+        x, y = position
+
+        rl, rb = self.region.bottom_left
+        rw, rh = self.region.size
+
+        bl, bb = self.bounds.bottom_left
+        bw, bh = self.bounds.size
+
+        cw, ch = self.capture.size
+
+        xf = (bw/rw * (x - rl) + bl) * cw
+        yf = (bh/rh * (y - rb) + bb) * ch
+        return Vec2(xf, yf)
+
     def _get_frame_data(self) -> np.ndarray | None:
         frame = self.webcam.get_frame()
         if frame is None:
             frame = self._fetched_frame
         else:
             self._fetched_frame = frame
+            self.capture = arcade.LBWH(0, 0, frame.shape[1], frame.shape[0])
+            l, b = self.map_position((0.0, 0.0))
+            r, t = self.map_position(self.capture.size)
+            rect = arcade.LRBT(l, r, b, t)
+            self.sprite.position = self.crunchy_sprite.position = rect.center
+            self.sprite.size = self.crunchy_sprite.size = rect.size
         frame = frame[:, :, ::-1]  # The camera data is BGR for some reason
         if self.flip:
             frame = np.fliplr(frame)
@@ -413,8 +456,12 @@ class WebcamController:
         positions = positions[top]
         brightest = brightest[top]
 
-        average_position = np.mean(positions, axis=0)
-        self._cloud = tuple(zip(positions, brightest))
+        if positions.size > 0:
+            average_position = np.mean(positions, axis=0)
+            self._cloud = tuple(zip(positions, brightest))
+        else:
+            average_position = (0.0, 0.0)
+            self._cloud = ()
 
         try:
             if self._cloud:
@@ -448,24 +495,19 @@ class WebcamController:
                 frame = frame.convert("L").convert("RGBA")
             tex = arcade.Texture(frame)
             self.sprite.texture = tex
-            self.sprite.size = self.size
 
             crunchy_frame = crunchy_frame.convert("RGBA")
             if self.show_lightness:
                 crunchy_frame = crunchy_frame.convert("L").convert("RGBA")
             crunchy_tex = arcade.Texture(crunchy_frame)
             self.crunchy_sprite.texture = crunchy_tex
-            self.crunchy_sprite.size = self.size
         self._raw_cursor = self.get_brightest_pixel(self._threshold, self._downsample)
         if self._cursor is None and self._raw_cursor:
             self._refresh_animator()
         if self._raw_cursor:
             self._no_pixel_time = 0.0
             self._cursor = self.animator.update(delta_time, Vec2(*self._raw_cursor))
-            self._mapped_cursor = (
-                int(map_range(self.cursor[0], 0, self.webcam.size[0], self._map_x_min, self._map_x_max)),
-                int(map_range(self.cursor[1], 0, self.webcam.size[1], self._map_y_min, self._map_y_max))
-            )
+            self._mapped_cursor = self.map_position(self._cursor)
         else:
             self._no_pixel_time += delta_time
             if self._no_pixel_time >= self.timeout:
@@ -473,13 +515,18 @@ class WebcamController:
 
     def debug_draw(self) -> None:
         if self.raw_cursor:
-            rect = arcade.XYWH(self.raw_cursor[0] + self.sprite.left, self.raw_cursor[1] + self.sprite.bottom, 10, 10)
-            arcade.draw_rect_filled(rect, arcade.color.RED)
-            cloud = [(x[0][0] * self.downsample * self.scaling + self.sprite.left, x[0][1] * self.downsample * self.scaling + self.sprite.bottom) for x in self.cloud]
+            pos = self.map_position(self.raw_cursor)
+            arcade.draw_point(*pos, (255, 0, 0), 10)
+            cloud = [self.map_position((x[0][0] * self.downsample, x[0][1] * self.downsample)) for x in self.cloud]
             arcade.draw_points(cloud, arcade.color.BLUE, 3)
         if self.cursor:
-            arect = arcade.XYWH(self.cursor[0] + self.sprite.left, self.cursor[1] + self.sprite.bottom, 10, 10)
-            arcade.draw_rect_filled(arect, arcade.color.GREEN)
+            pos = self.map_position(self.cursor)
+            arcade.draw_point(*pos, (0, 255, 0), 10)
+
+        arcade.draw_rect_outline(self.region, (255, 255, 255), 15)
+        l, b = self.map_position((0.0, 0.0))
+        r, t = self.map_position(self.capture.size)
+        arcade.draw_rect_outline(arcade.LRBT(l, r, b, t), (255, 0, 0), 10)
 
     def draw(self) -> None:
         self.spritelist.draw()

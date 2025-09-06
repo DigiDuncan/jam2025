@@ -30,6 +30,7 @@ class IntegrationTestView(View):
         self.webcam.sprite.position = self.center
 
     def reset(self):
+        self.player.seek(0.0)
         self.character.reset()
         
         self.bullet_list = BulletList()

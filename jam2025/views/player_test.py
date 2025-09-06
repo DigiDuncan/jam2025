@@ -32,7 +32,7 @@ class PlayerTestView(View):
         # self.emitter.direction = v.heading()
 
     def on_update(self, delta_time: float) -> None:
-        self.character.update(delta_time, self.mouse_pos)
+        self.character.update(delta_time, Vec2(*self.mouse_pos))
         self.bullet_list.update(delta_time)
         self.emitter.update(delta_time)
 

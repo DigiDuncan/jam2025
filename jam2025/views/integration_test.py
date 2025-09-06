@@ -1,4 +1,4 @@
-from arcade import View, LBWH
+from arcade import View, Vec2, LBWH
 
 from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet
 from jam2025.core.game.character import Character
@@ -6,6 +6,8 @@ from jam2025.core.game.character import Character
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music
 from jam2025.core.webcam import WebcamController
+
+PLAYER_MAX_HEALTH = 100
 
 class IntegrationTestView(View):
     
@@ -27,12 +29,20 @@ class IntegrationTestView(View):
         self.webcam.sprite.size = self.size
         self.webcam.sprite.position = self.center
 
+    def reset(self):
+        self.character.reset()
+        
+        self.bullet_list = BulletList()
+        self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
+        
+        self.emitter.set_pattern(PATTERNS["fourwayspin"])
+
     def on_update(self, delta_time: float) -> bool | None:
         if self.webcam.webcam.connected:
             self.webcam.update(delta_time)
-            self.character.update(delta_time, self.webcam.mapped_cursor)
+            self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor))
         else:
-            self.character.update(delta_time, self.center)
+            self.character.update(delta_time, Vec2(*self.center))
         self.bullet_list.update(delta_time)
         self.emitter.update(delta_time)
 

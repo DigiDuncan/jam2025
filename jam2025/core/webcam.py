@@ -349,7 +349,7 @@ class WebcamController:
     @frequency.setter
     def frequency(self, v: float) -> None:
         self._frequency = v
-        self._refresh_animator()
+        self.animator.update_values(self._frequency, self._dampening, self._response)
 
     @property
     def dampening(self) -> float: return self._dampening
@@ -357,7 +357,7 @@ class WebcamController:
     @dampening.setter
     def dampening(self, v: float) -> None:
         self._dampening = v
-        self._refresh_animator()
+        self.animator.update_values(self._frequency, self._dampening, self._response)
 
     @property
     def response(self) -> float: return self._response
@@ -365,7 +365,7 @@ class WebcamController:
     @response.setter
     def response(self, v: float) -> None:
         self._response = v
-        self._refresh_animator()
+        self.animator.update_values(self._frequency, self._dampening, self._response)
 
     def _refresh_animator(self) -> None:
         self.animator = SecondOrderAnimatorKClamped(self._frequency, self._dampening, self._response, Vec2(*self._raw_cursor) if self._raw_cursor else Vec2(0, 0), Vec2(*self._raw_cursor) if self._raw_cursor else Vec2(0, 0), 0)

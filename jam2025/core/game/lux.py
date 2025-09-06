@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-from math import tau
 import arcade
+import arcade.gl as gl
 from arcade.types import Point2, RGBOrA255
 from pyglet.graphics import Batch
-from pyglet.shapes import Triangle, Circle
+from pyglet.shapes import Triangle
 from jam2025.lib.procedural_animator import ProceduralAnimator, SecondOrderAnimator
 from pyglet.math import Vec2
-from typing import TYPE_CHECKING
 from logging import getLogger
-
-if TYPE_CHECKING:
-    from jam2025.core.game.character import Character
 
 logger = getLogger("jam2025")
 
@@ -30,50 +26,8 @@ NORMAL_TEST = 0.0001
 
 import numpy as np
 
-class LuxSimplified:
-    """
-    Because of how ProceduralAnimator is implimented we can use numpy arrays
-    to animate all of lux's points at once.
-    """
-
-    def __init__(self, position: tuple[float, float]):
-        self._directions = np.asarray([[np.cos(r), np.sin(r)] for r in np.linspace(0, 2 * np.pi, BUBBLE_COUNT, False)])
-        self._relative_positions = RADIUS * self._directions
-        self._batch = Batch()
-        self._triangle_indices = tuple((0, i, (i+1)) for i in range(1, BUBBLE_COUNT-1))
-        self._triangles = tuple(Triangle(0.0, 0.0, 1.0, 1.0, 2.0, 0.0, batch=self._batch) for _ in range(BUBBLE_COUNT-2))
-        _positions = np.asarray([position]) + self._relative_positions
-        self._animator = SecondOrderAnimator(
-            LOCUS_POS_FREQ, LOCUS_POS_DAMP, LOCUS_POS_RESP,
-            _positions.reshape(2*BUBBLE_COUNT), _positions.reshape(2*BUBBLE_COUNT), np.zeros(2*BUBBLE_COUNT) # type: ignore -- I need to fix the typing of the animatable protocol
-        )
-        self.update_triangles()
-
-    def update(self, dt: float, nx: tuple[float, float], dx: tuple[float, float]):
-        dot = dx[0]*self._directions[:, 0] + dx[1]*self._directions[:, 1]
-        freq = 3.0*(0.5*dot + 0.5) + 3.0
-        self._animator.update_frequency(new_frequency=np.repeat(freq, 2))
-        self._animator.update_response(new_response=np.repeat(dot, 2))
-
-        _positions = np.asarray([nx]) + self._relative_positions
-        self._animator.update(dt, _positions.reshape(2*BUBBLE_COUNT))
-
-    def update_triangles(self):
-        points = (self._animator.y).reshape(BUBBLE_COUNT, -1)
-        for idx, triangle in enumerate(self._triangles):
-            a, b, c = self._triangle_indices[idx]
-            triangle.x, triangle.y = points[a]
-            triangle.x2, triangle.y2 = points[b]
-            triangle.x3, triangle.y3 = points[c]
-
-    def draw(self):
-        self.update_triangles()
-        # TODO: backface culling
-        self._batch.draw()
-        
-
 class BubblePoint:
-    def __init__(self, angle: float, locus: Point2):
+    def __init__(self, angle: float, locus: Vec2):
         self.original_dir = Vec2.from_polar(angle, 1.0)
         self.original_offset = self.original_dir * RADIUS
         pos = locus + self.original_offset
@@ -83,7 +37,7 @@ class BubblePoint:
             pos, pos, Vec2()
         )
 
-    def update(self, dt: float, new_locus: Point2, new_dir: Vec2):
+    def update(self, dt: float, new_locus: Vec2, new_dir: Vec2):
         target = new_locus + self.original_offset
         dot = new_dir.dot(self.original_dir)
         self.animator.update_values(new_frequency=3.0*(0.5*dot + 0.5) + 3.0, new_response=dot)
@@ -123,18 +77,112 @@ class PlayerRenderer:
         self.locus_a: Vec2 = Vec2()
         self.locus_da: Vec2 = Vec2()
         self.locus_b: Vec2 = Vec2()
-        self.locus_animator = ProceduralAnimator(
+        self.locus_animator: SecondOrderAnimator[Vec2, float] = SecondOrderAnimator(
             LOCUS_POS_FREQ, LOCUS_POS_DAMP, LOCUS_POS_RESP,
-            self.locus_a, self.locus_b, Vec2()  # type: ignore -- Animators are poorly typed
+            self.locus_a, self.locus_b, Vec2()
         )
         self.bubble = Bubble(self.locus_a)
 
-    def update(self, dt: float, new_a: Vec2) -> None:
-        self.locus_da = (new_a - self.locus_a) / dt
-        self.locus_a = Vec2(*new_a)
+    @property
+    def position(self):
+        return self.locus_a
+    
+    @position.setter
+    def position(self, pos: Vec2):
+        self.locus_a = pos
+
+    @property
+    def velocity(self):
+        return self.locus_da
+    
+    @velocity.setter
+    def velocity(self, vel: Vec2):
+        self.locus_da = vel
+
+    def update(self, dt: float) -> None:
         self.locus_b = self.locus_animator.update(dt, self.locus_a, self.locus_da)
         self.bubble.update(dt, self.locus_a, self.locus_da.normalize())
 
     def draw(self) -> None:
         self.bubble.draw(arcade.color.WHITE)
+
+class LuxRenderer:
+    FRAGMENT_SHADER = r"""#version 330
+uniform vec4 in_colour;
+
+out vec4 fs_colour;
+
+void main(){
+    fs_colour = in_colour;
+}
+"""
+    VERTEX_SHADER = r"""#version 330
+uniform WindowBlock {
+    mat4 projection;
+    mat4 view;
+} window;
+
+in vec2 in_position;
+
+void main(){
+    gl_Position = window.projection * window.view * vec4(in_position, 0.0, 1.0);
+}
+"""
+
+    def __init__(self) -> None:
+        self.position: Vec2 = Vec2()
+        self.velocity: Vec2 = Vec2()
+
+        self._directions: np.typing.NDArray[np.float64] = np.asarray([(np.cos(a), np.sin(a)) for a in np.linspace(0, 2*np.pi, BUBBLE_COUNT, endpoint=False)])
+        self._offsets = RADIUS * self._directions
+        
+        vertices = [self.position] + self._offsets
+        self._animator: SecondOrderAnimator[np.typing.NDArray[np.float64], np.typing.NDArray[np.float64]] = (
+            SecondOrderAnimator(
+                np.ones((BUBBLE_COUNT, 1)) * LOCUS_POS_FREQ,
+                np.ones((BUBBLE_COUNT, 1)) * LOCUS_POS_DAMP,
+                np.ones((BUBBLE_COUNT, 1)) * LOCUS_POS_RESP,
+                vertices, vertices, np.zeros((BUBBLE_COUNT, 2))
+            )
+        )
+
+        ctx = arcade.get_window().ctx
+        self._vertices: gl.Buffer = ctx.buffer(data=np.asarray(vertices, np.float32).tobytes())
+        self._geometry: gl.Geometry = ctx.geometry(
+            [gl.BufferDescription(self._vertices, '2f', ['in_position'])],
+            index_buffer=ctx.buffer(data=np.asarray([(0, (i+1), i) for i in range(1, BUBBLE_COUNT-1)], dtype=np.int32).tobytes()),
+            mode=ctx.TRIANGLES
+        )
+        self._program: gl.Program = ctx.program(
+            vertex_shader=LuxRenderer.VERTEX_SHADER,
+            fragment_shader=LuxRenderer.FRAGMENT_SHADER,
+        )
+        self._program['in_colour'] = (1.0, 1.0, 1.0, 1.0)
+    
+    def reset(self):
+        self.position: Vec2 = Vec2()
+        self.velocity: Vec2 = Vec2()
+        vertices = [self.position] + self._offsets
+        self._animator = (
+            SecondOrderAnimator(
+                np.ones((BUBBLE_COUNT, 1)) * LOCUS_POS_FREQ,
+                np.ones((BUBBLE_COUNT, 1)) * LOCUS_POS_DAMP,
+                np.ones((BUBBLE_COUNT, 1)) * LOCUS_POS_RESP,
+                vertices, vertices, np.zeros((BUBBLE_COUNT, 2))
+            )
+        )
+
+        self._vertices.write(vertices.tobytes())
+
+    def update(self, dt: float) -> None:
+        dir = self.velocity.normalize()
+        dot = dir.x * self._directions[:, None, 0] + dir.y * self._directions[:, None, 1]
+        self._animator.update_values(new_frequency=3.0*(0.5*dot + 0.5) + 3.0, new_response=dot)
+
+        targets = [self.position] + self._offsets
+        vertices = self._animator.update(dt, targets)
+        self._vertices.write(np.asarray(vertices, np.float32).tobytes())
+
+    def draw(self) -> None:
+        self._geometry.render(self._program)
 

@@ -1,6 +1,7 @@
+from __future__ import annotations
 from math import pi, tau, ceil, exp, cos, cosh
 
-from typing import TypeVar, Protocol, Optional
+from typing import Protocol, Optional, Self
 
 
 __all__ = (
@@ -13,66 +14,76 @@ __all__ = (
     'update_default_animator'
 )
 
-
 class Animatable(Protocol):
+    def __mul__(self, other: float | Self, /) -> Self: ...
+    def __rmul__(self, other: float | Self, /) -> Self: ...
+    def __truediv__(self, other: float | Self, /) -> Self: ...
+    def __rtruediv__(self, other: float | Self, /) -> Self: ...
+    def __add__(self, other: float | Self, /) -> Self: ...
+    def __radd__(self, other: float | Self, /) -> Self: ...
+    def __sub__(self, other: float | Self, /) -> Self: ...
+    def __rsub__(self, other: float | Self, /) -> Self: ...
+    def __pow__(self, other: float | Self, /) -> Self: ...
 
-    def __mul__(self, other):
-        ...
+class SecondOrderAnimatorBase[A: Animatable, K: Animatable]:
 
-    def __add__(self, other):
-        ...
+    def __init__(self, frequency: K, damping: K, response: K,  x_initial: A, y_initial: A, y_d_initial: A):
+        self.xp: A = x_initial
+        self.y: A = y_initial
+        self.dy: A = y_d_initial
 
-    def __sub__(self, other):
-        ...
+        self._freq: K = frequency
+        self._damp: K = damping
+        self._resp: K = response
 
+        self.k1: K = damping / (pi * frequency)
+        self.k2: K = 1.0 / (tau * frequency) ** 2.0
+        self.k3: K = (response * damping) / (tau * frequency)
 
-A = TypeVar('A', bound=Animatable)
-
-
-class SecondOrderAnimatorBase:
-
-    def __init__(self, frequency: float, damping: float, response: float,  x_initial: A, y_initial: A, y_d_initial: A):
-        self.xp: Animatable = x_initial
-        self.y: Animatable = y_initial
-        self.dy: Optional[Animatable] = y_d_initial
-
+    @property
+    def frequency(self) -> K:
+        return self._freq
+    
+    @frequency.setter
+    def frequency(self, frequency: K ):
         self._freq = frequency
+        self.calc_k_vals()
+
+    @property
+    def damping(self) -> K:
+        return self._damp
+    
+    @damping.setter
+    def damping(self, damping: K) -> None:
         self._damp = damping
+        self.calc_k_vals()
+
+    @property
+    def response(self) -> K:
+        return self._damp
+    
+    @response.setter
+    def response(self, response: K) -> None:
         self._resp = response
-
-        self.k1: float = damping / (pi * frequency)
-        self.k2: float = 1.0 / (tau * frequency) ** 2.0
-        self.k3: float = (response * damping) / (tau * frequency)
-
-    def update_frequency(self, new_frequency):
-        self._freq = new_frequency
         self.calc_k_vals()
 
-    def update_damping(self, new_damping):
-        self._damp = new_damping
-        self.calc_k_vals()
-
-    def update_response(self, new_response):
-        self._resp = new_response
-        self.calc_k_vals()
-
-    def update_values(self, new_frequency: Optional[A] = None, new_damping: Optional[A] = None, new_response: Optional[A] = None):
-        self._freq = new_frequency or self._freq
-        self._damp = new_damping or self._damp
-        self._resp = new_response or self._resp
+    def update_values(self, new_frequency: K | None = None, new_damping: K | None = None, new_response: K | None = None):
+        self._freq = new_frequency if new_frequency is not None else self._freq
+        self._damp = new_damping if new_damping is not None else self._damp
+        self._resp = new_response if new_response is not None else self._resp
 
         self.calc_k_vals()
 
-    def calc_k_vals(self):
+    def calc_k_vals(self) -> None:
         self.k1 = self._damp / (pi * self._freq)
         self.k2 = 1.0 / (tau * self._freq)**2.0
         self.k3 = (self._resp * self._damp) / (tau * self._freq)
 
-    def update(self, dt: float, nx: A, dx: Optional[A] = None):
+    def update(self, dt: float, nx: A, dx: A | None = None) -> A:
         raise NotImplementedError()
 
 
-class SecondOrderAnimator(SecondOrderAnimatorBase):
+class SecondOrderAnimator[A: Animatable, K: Animatable](SecondOrderAnimatorBase[A, K]):
     """
     The most basic implementation of the second order procedural animator.
 
@@ -80,7 +91,7 @@ class SecondOrderAnimator(SecondOrderAnimatorBase):
     and the sim can explode with lag spikes.
     """
 
-    def update(self, dt: float, nx: A, dx: Optional[A] = None):
+    def update(self, dt: float, nx: A, dx: A | None = None):
         dx = dx or (nx - self.xp) / dt
         self.xp = nx
         self.y = self.y + self.dy * dt
@@ -89,7 +100,7 @@ class SecondOrderAnimator(SecondOrderAnimatorBase):
         return self.y
 
 
-class SecondOrderAnimatorTCritical(SecondOrderAnimatorBase):
+class SecondOrderAnimatorTCritical[A: Animatable](SecondOrderAnimatorBase[A, float]):
     """
     A slightly more complex implementation which tries to stay physically accurate.
 
@@ -99,7 +110,7 @@ class SecondOrderAnimatorTCritical(SecondOrderAnimatorBase):
 
     def __init__(self, frequency: float, damping: float, response: float, x_initial: A, y_initial: A, y_d_initial: A):
         super().__init__(frequency, damping, response, x_initial, y_initial, y_d_initial)
-        self.T_crit = 0.8 * ((4.0 * self.k2 + self.k1 * self.k1)**0.5 - self.k1)
+        self.T_crit: float = 0.8 * ((4.0 * self.k2 + self.k1 * self.k1)**0.5 - self.k1)
 
     def calc_k_vals(self):
         super().calc_k_vals()
@@ -123,7 +134,7 @@ class SecondOrderAnimatorTCritical(SecondOrderAnimatorBase):
         return y
 
 
-class SecondOrderAnimatorKClamped(SecondOrderAnimatorBase):
+class SecondOrderAnimatorKClamped[A: Animatable, K: Animatable](SecondOrderAnimatorBase[A, K]):
     """
     A version of the sim that prioritises stability over physical accuracy.
 
@@ -131,10 +142,11 @@ class SecondOrderAnimatorKClamped(SecondOrderAnimatorBase):
     both sim explosions with lag spikes, and jittering at high frequencies.
     """
 
-    def update(self, dt: float, nx: A, dx: Optional[A] = None):
+    def update(self, dt: float, nx: A, dx: A | None = None):
         dx = dx or (nx - self.xp) / dt
         self.xp = nx
         # Clamping k2 it isn't physically correct, but protects against the sim collapsing with lag spikes.
+        # TODO: update to work with numpy array
         k2_stable = max(self.k2, dt*dt/2.0 + dt*self.k1/2.0, dt*self.k1)
 
         self.y = self.y + self.dy * dt
@@ -143,7 +155,7 @@ class SecondOrderAnimatorKClamped(SecondOrderAnimatorBase):
         return self.y
 
 
-class SecondOrderAnimatorPoleZero(SecondOrderAnimatorBase):
+class SecondOrderAnimatorPoleZero[A: Animatable](SecondOrderAnimatorBase[A, float]):
     """
     The most complex version of the sim that is more accurate for higher speeds.
 
@@ -186,7 +198,7 @@ class SecondOrderAnimatorPoleZero(SecondOrderAnimatorBase):
 ProceduralAnimator = SecondOrderAnimatorKClamped
 
 
-def update_default_animator(new_default: type):
+def update_default_animator(new_default: type[SecondOrderAnimator]):
     assert issubclass(new_default, SecondOrderAnimatorBase)
     global ProceduralAnimator
     ProceduralAnimator = new_default

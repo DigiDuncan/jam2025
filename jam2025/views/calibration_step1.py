@@ -14,7 +14,7 @@ from jam2025.lib.anim import ease_quadinout, ease_quadout, lerp, perc
 from jam2025.lib.logging import logger
 from jam2025.core.webcam import WebcamController
 from jam2025.lib.typing import FOREVER
-from jam2025.lib.settings import SETTINGS
+from jam2025.core.settings import SETTINGS
 from jam2025.lib.utils import open_settings
 
 class Phase(IntEnum):
@@ -31,7 +31,7 @@ def make_text(text: str, x: float, y: float, align: str = "left") -> Text:
 class MouseCalibrationView(View):
     def __init__(self) -> None:
         super().__init__()
-        self.void = Void()
+        self.void = Void(self.window.rect)
         self.music = load_music("found-in-space-17")
         self.player = self.music.play(volume = 0.0, loop = True)
 

@@ -10,13 +10,13 @@ from jam2025.core.webcam import WebcamController
 PLAYER_MAX_HEALTH = 100
 
 class IntegrationTestView(View):
-    
+
     def __init__(self) -> None:
         View.__init__(self)
-        self.void = Void()
+        self.void = Void(self.window.rect)
         self.music = load_music("found-in-space-17")
         self.player = self.music.play(volume = 0.05, loop = True)
-        
+
         self.character = Character()
 
         self.bullet_list = BulletList()
@@ -29,13 +29,13 @@ class IntegrationTestView(View):
         self.webcam.sprite.size = self.size
         self.webcam.sprite.position = self.center
 
-    def reset(self):
+    def reset(self) -> None:
         self.player.seek(0.0)
         self.character.reset()
-        
+
         self.bullet_list = BulletList()
         self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
-        
+
         self.emitter.set_pattern(PATTERNS["fourwayspin"])
 
     def on_update(self, delta_time: float) -> bool | None:

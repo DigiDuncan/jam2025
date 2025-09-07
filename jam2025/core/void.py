@@ -2,13 +2,9 @@ import arcade
 from arcade.clock import GLOBAL_CLOCK
 from arcade.experimental.shadertoy import Shadertoy
 from arcade.types import RGBA255
-from jam2025.lib.settings import SETTINGS
 
 class Void:
-    def __init__(self) -> None:
-        """https://www.shadertoy.com/view/3XG3WK"""
-        self.shader = """
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    SHADER = """void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec2 uv = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
     vec3 r = vec3(uv, 1.0);
     vec4 o = vec4(0.3);
@@ -36,7 +32,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     fragColor = vec4(o.rgb, 1.0);
 }
 """
-        self.shadertoy = Shadertoy((SETTINGS.screen_width, SETTINGS.screen_height), self.shader)
+
+    def __init__(self, region: arcade.Rect) -> None:
+        """https://www.shadertoy.com/view/3XG3WK"""
+        self.region = region
+        self.shadertoy = Shadertoy((region.width, region.height), Void.SHADER)
         self.overlay_color: RGBA255 = (0, 0, 0, 255 - 32)
 
     def draw(self) -> None:

@@ -8,11 +8,11 @@ from arcade import Vec2
 from arcade.types import Point2
 from PIL import Image
 
+from .settings import SETTINGS
 from .config import CONFIG
 
 from jam2025.lib.logging import logger
 from jam2025.lib.procedural_animator import SecondOrderAnimatorKClamped
-from jam2025.lib.settings import SETTINGS
 from jam2025.lib.utils import frame_data_to_image, map_range, rgb_to_l
 
 if CONFIG.is_windows:
@@ -293,14 +293,10 @@ class WebcamController:
         self._threshold = SETTINGS.threshold
         self._downsample = SETTINGS.downsample
         self._top_pixels = SETTINGS.polled_points
+
         self._frequency = SETTINGS.frequency
         self._dampening = SETTINGS.dampening
         self._response = SETTINGS.response
-
-        self._map_x_min = SETTINGS.x_min
-        self._map_x_max = SETTINGS.x_max
-        self._map_y_min = SETTINGS.y_min
-        self._map_y_max = SETTINGS.y_max
 
         self.timeout = 1.0
 
@@ -440,7 +436,7 @@ class WebcamController:
         thresholded_values = brightness >= threshold
         # Get the y idx and x idx of every pixel above the threshold
         bi = thresholded_values.nonzero()
-        
+
         # Get the brightness values for each pixel position
         brightest = brightness[bi]
 
@@ -450,7 +446,7 @@ class WebcamController:
 
         # sort by the brightest pixels, but get the indices needed so the brightness and positions can be sorted
         sorting = np.argsort(brightest)[::-1]
-        
+
         # get the top n brightest pixels
         top = sorting[:self._top_pixels]
         positions = positions[top]
@@ -478,6 +474,7 @@ class WebcamController:
         self.threshold = SETTINGS.threshold
         self.downsample = SETTINGS.downsample
         self.top_pixels = SETTINGS.polled_points
+        print(f"updating webcam controller {self.threshold}, {self.downsample}, {self.top_pixels}")
 
     def _refresh_animator_settings(self) -> None:
         self.frequency = SETTINGS.frequency

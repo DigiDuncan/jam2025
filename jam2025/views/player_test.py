@@ -10,7 +10,7 @@ from jam2025.data.loading import load_music
 class PlayerTestView(View):
     def __init__(self) -> None:
         super().__init__()
-        self.void = Void()
+        self.void = Void(self.window.rect)
         self.music = load_music("found-in-space-17")
         self.player = self.music.play(volume = 0.0, loop = True)
 

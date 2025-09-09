@@ -151,8 +151,8 @@ class Webcam:
             self._disconnect()
             return
 
-        self._webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self._webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        # self._webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        # self._webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
         size = int(self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps =  int(self._webcam.get(cv2.CAP_PROP_FPS))

@@ -8,7 +8,7 @@ class Character:
         self.position: Vec2 = Vec2()
         self.velocity: Vec2 = Vec2()
         self.size: float = 20
-        self.health: float = 100
+        self.health: float = 5
 
         # self.renderer = PlayerRenderer()
         self.renderer = LuxRenderer()
@@ -17,7 +17,7 @@ class Character:
         self.position = Vec2()
         self.velocity = Vec2()
         self.size = 20
-        self.health = 100
+        self.health = 5
 
         self.renderer.reset()
 

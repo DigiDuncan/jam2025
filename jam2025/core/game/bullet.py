@@ -82,9 +82,10 @@ class BulletList:
         self.bullets.append(new_bullet)
         self.sprite_list.append(new_bullet.sprite)
 
-    def update(self, delta_time: float) -> None:
+    def update(self, delta_time: float, character: Character) -> None:
         for bullet in self.bullets:
             bullet.update(delta_time)
+            bullet.collide(character)
 
         for bullet in [b for b in self.bullets if not b.live]:
             self.bullets.remove(bullet)

@@ -44,8 +44,11 @@ class IntegrationTestView(View):
             self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor))
         else:
             self.character.update(delta_time, Vec2(*self.center))
-        self.bullet_list.update(delta_time)
+        self.bullet_list.update(delta_time, self.character)
         self.emitter.update(delta_time)
+
+        if self.character.health <= 0:
+            self.reset()
 
     def on_draw(self) -> bool | None:
         self.clear()

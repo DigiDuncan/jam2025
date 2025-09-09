@@ -2,117 +2,177 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from weakref import WeakMethod
 from logging import getLogger
+from typing import Any
 from pathlib import Path
-from typing import Any, Self
+from sys import platform
+from tomllib import load
+from tomli_w import dump
 
 logger = getLogger("jam2025")
 
-class _Setting[V]:
-
-    def __init__(self, default: V):
-        self._name: str = "*"
-        self._value: V = default
-
-    def __set_name__(self, owner: type[_Settings], name: str):
-        # Geting the setting name for the listeners to get updated
-        # We also use this opertunity to register ourselves for reading/writing
-        self._name = name
-
-    def __get__(self, obj: _Settings, objtype: type[_Settings] | None = None) -> V:
-        return self._value
-
-    def __set__(self, obj: _Settings, value: V) -> None:
-        if value == self._value:
-            pass # Should we ignore when the value doesn't change?
-        self._value = value
-        obj.refresh(self._name)
+__all__ = (
+    "settings",
+)
 
 type RefreshFunc = Callable[[], Any] # No args, any return value (generally None)
 type WeakRefreshFunc = WeakMethod[RefreshFunc]
 
-
 class _Settings:
-    screen_width: _Setting[int] = _Setting(1280)
-    screen_height: _Setting[int] = _Setting(720)
-    screen_fps: _Setting[int] = _Setting(240)
 
-    device_id: _Setting[int] = _Setting(0)
-    device_name: _Setting[str] = _Setting("USB Video Device")
+    def __init__(self, values: dict[str, Any]) -> None:
+        self._refresh_functions: dict[WeakRefreshFunc, set[str] | None] = {}
 
-    threshold: _Setting[int] = _Setting(245)
-    downsample: _Setting[int] = _Setting(8)
-    polled_points: _Setting[int] = _Setting(50)
+        # Config (change during development)
+        self.window_width: int
+        self.window_height: int
+        self.window_name: str
+        self.window_fullscreen: bool
+        self.window_fps: int
+        self.window_tps: int
+        
+        self.initial_view: str
+        self._platform: str = platform
 
-    frequency: _Setting[float] = _Setting(2.0)
-    dampening: _Setting[float] = _Setting(1.8)
-    response: _Setting[float] = _Setting(-0.5)
+        self.motion_frequency: float
+        self.motion_dampening: float
+        self.motion_response: float
 
-    webcam_width: _Setting[int] = _Setting(1280)
-    webcam_height: _Setting[int] = _Setting(720)
-    webcam_fps: _Setting[int] = _Setting(30)
-    webcam_exposure: _Setting[float] = _Setting(-5.0)
+        # Calibration (unique to each webcam / device)
+        self.webcam_name: str
+        self.webcam_id: int
+        self.webcam_width: int
+        self.webcam_height: int
+        self.webcam_exposure: float
+        self.webcam_flip: bool
+        self.webcam_bounds: tuple[float, float, float, float]
+        
+        self.capture_threshold: int
+        self.capture_downsample: int
+        self.capture_count: int
 
-    def __init__(self) -> None:
-        self._registered_refresh_funcs: dict[WeakRefreshFunc, Sequence[str] | None] = {}
-        self._refresh_func_mapping: dict[str, list[WeakRefreshFunc]] = {} # Could this be a default dict? yes. I don't care.
+        # Settings (set by player)
+        self.master_volume: float
+        self.sfx_volume: float
+        self.music_volume: float
+        self.ui_volume: float
 
-    def refresh(self, name: str) -> None:
-        functions = self._refresh_func_mapping.get(name, []) + self._refresh_func_mapping.get("*", [])
+        self.update_values(**values)
 
-        for function in functions:
-            function()() # dereference weakrefs and call function
-
-    def register_refresh_func(self, f: RefreshFunc, mask: Sequence[str] = ()) -> None:
-        w = WeakMethod(f, self._cleanup_refresh_func) # Make a weakref to protect against ugly reference nightmares
-        if w in self._registered_refresh_funcs:
-            # function already been registered so we need to update masks
-            old_mask = self._registered_refresh_funcs[w]
-            if mask == old_mask:
-                return # No need to continue updating mask
-            self._remove_mask(w, old_mask)
-
-        self._registered_refresh_funcs[w] = mask
-        self._add_mask(w, mask)
-
-    def _cleanup_refresh_func(self, w: WeakRefreshFunc) -> None:
-        # We need to use a special private cleanup method because:
-        # a) logging when weakref cleanup happens
-        # b) the original the weakmethod is passed in not the function
-        mask = self._registered_refresh_funcs[w]
-        logger.info(f"cleaning up refresh func {w} with mask {mask}")
-        self._remove_mask(w, mask)
-
-    def _remove_mask(self, w: WeakRefreshFunc, mask: Sequence[str] | None) -> None:
-        if mask is None:
-            self._refresh_func_mapping["*"].remove(w)
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith('_'):
+            object.__setattr__(self, name, value)
             return
-        for name in mask:
-            self._refresh_func_mapping[name].remove(w)
+        
+        for func, mask in self._refresh_functions.items():
+            if mask is None or name in mask:
+                func()() # type: ignore -- because it's a weakref we have to deref it first
 
-    def _add_mask(self, w: WeakRefreshFunc, mask: Sequence[str] | None) -> None:
-        # Yeah I know about default dict but idk something about it feels stinky
-        if mask is None:
-            l = self._refresh_func_mapping.get("*", [])
-            l.append(w)
-            self._refresh_func_mapping["*"] = l
-            return
-        for name in mask:
-            l = self._refresh_func_mapping.get(name, [])
-            l.append(w)
-            self._refresh_func_mapping[name] = l
+    def update_values(self, **kwds: dict[str, Any]):
+        for name, value in kwds.items():
+            object.__setattr__(self, name, value)
+        updated = set(kwds)
+        for func, mask in self._refresh_functions.items():
+            if mask is None or updated.intersection(updated):
+                func()() # type: ignore -- because it's a weakref we have to deref it first
 
-    def deregister_refresh_func(self, f: RefreshFunc) -> None: 
+    def register_refresh_func(self, f: RefreshFunc, mask: Sequence[str] | None):
+        m = None if mask is None else set(mask)
+        w = WeakMethod(f, self._clear_function)
+        self._refresh_functions[w] = m
+
+    def _clear_function(self, w: WeakRefreshFunc):
+        self._refresh_functions.pop(w)
+        logger.info(f'refresh function {w} automatically deregistered')
+
+    def deregister_refresh_func(self, f: RefreshFunc):
         w = WeakMethod(f)
-        if w not in self._registered_refresh_funcs:
+        if w not in self._refresh_functions:
             return
-        mask = self._registered_refresh_funcs.pop(w)
-        self._remove_mask(mask)
+        self._refresh_functions.pop(w)
 
-    @classmethod
-    def from_file(cls, file_path: Path) -> Self:
-        raise NotImplementedError
+    @property
+    def platform(self):
+        return self._platform
+    
+    @property
+    def is_windows(self):
+        return self._platform == 'win32'
 
-    def to_file(self, file_path: Path) -> None:
-        raise NotImplementedError
+type settingMapping = tuple[str, Any]
+_MAPPING: dict[str, dict[str, settingMapping]] = {
+    "window": {
+        "width": ("window_width", 1280),
+        "height": ("window_height", 720),
+        "fullscreen": ("window_fullscreen", False),
+        "name": ("window_name", "GDG jam 2 2025 - Lux: pass the torch"),
+        "fps": ("window_fps", 240),
+        "tps": ("window_tps", 20),
+        "initial_view": ("initial_view", "m_calibration")
+    },
+    "control": {
+        "frequency": ("motion_frequency", 2.0),
+        "damping": ("motion_dampening", 1.0),
+        "response": ("motion_response", -0.5)
+    },
+    "volume": {
+        "master": ("master_volume", 1.0),
+        "sfx": ("sfx_volume", 1.0),
+        "music": ("music_volume", 1.0),
+        "ui": ("ui_volume", 1.0),
+    },
+    "webcam": {
+        "width": ("webcam_width", 1280),
+        "height": ("webcam_height", 720),
+        "exposure": ("webcam_exposure", -5.0),
+    },
+    "calibration": {
+        "name": ("webcam_name", "NO DEVICE NAME SET"),
+        "id": ("webcam_id", 0),
+        "flip": ("webcam_flip", False),
+        "bounds": ("webcam_bounds", (0.0, 1.0, 0.0, 1.0)),
+        "threshold": ("capture_threshold", 245),
+        "downsample": ("capture_downsample", 4),
+        "count": ("capture_count", 30),
+    },
+}
 
-SETTINGS = _Settings()
+def load_settings() -> _Settings:
+    _cfg_path = Path('.cfg')
+    if not _cfg_path.exists():
+        return create_settings()
+    
+    with open(_cfg_path, 'rb') as fp:
+        toml = load(fp)
+    
+    values: dict[str, Any] = {}
+    for group, data in _MAPPING.items():
+        for name, (attr, _) in data.items():
+            values[attr] = toml[group][name]
+
+    return _Settings(values)
+
+
+def create_settings() -> _Settings:
+    values: dict[str, Any] = {}
+    for data in _MAPPING.values():
+        for (attr, default) in data.values():
+            values[attr] = default
+    return _Settings(values)
+
+
+def write_settings(settings: _Settings, dump_toml: bool = True):
+    toml: dict[str, Any] = {}
+    for group, data in _MAPPING.items():
+        toml[group] = {}
+        for name, (attr, _) in data.items():
+            toml[group][name] = settings.__getattribute__(attr)
+
+    if not dump_toml:
+        return toml
+
+    _cfg_path = Path('.cfg')
+    with open(_cfg_path, 'wb+') as fp:
+        dump(toml, fp)
+    return toml
+
+settings = load_settings()

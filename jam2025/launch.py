@@ -1,11 +1,12 @@
-from .core.config import CONFIG, VIEWS
+from .core.settings import settings, write_settings
+from .core.navigation import navigation
 from .core.application import Window
 from jam2025.lib import logging
 
 from .views import MouseCalibrationView, PlayerTestView, IntegrationTestView
 
 def launch() -> None:
-    VIEWS.add_views({
+    navigation.add_views({
         "m_calibration": (MouseCalibrationView, False),
         "p_test": (PlayerTestView, False),
         "i_test1": (IntegrationTestView, False)
@@ -14,5 +15,7 @@ def launch() -> None:
     logging.setup()
 
     win = Window()
-    VIEWS.show_view(CONFIG.initial_view)
+    navigation.show_view(settings.initial_view)
     win.run()
+
+    write_settings(settings)

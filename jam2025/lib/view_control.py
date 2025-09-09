@@ -1,7 +1,7 @@
 from arcade import get_window, View
 
 __all__ = (
-    "Transition"
+    "Transition",
 )
 
 class Transition:

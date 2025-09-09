@@ -3,14 +3,14 @@ import arcade
 from jam2025.core.ui.button import HoverButton
 from jam2025.lib.utils import open_settings, text_to_rect
 from jam2025.lib.logging import logger
-from jam2025.lib.settings import SETTINGS
+from jam2025.core.settings import settings
 from jam2025.core.webcam import WebcamController
 
 class WebcamTestView(arcade.View):
     def __init__(self) -> None:
         super().__init__()
 
-        self.webcam = WebcamController(0, scaling = 2)
+        self.webcam = WebcamController(settings.webcam_id, settings.webcam_name, scaling = 2)
         self.button = HoverButton(self.center_x, self.height / 4, 40, 6)
 
         self.show_crunchy = False
@@ -69,28 +69,21 @@ class WebcamTestView(arcade.View):
         response_rect = text_to_rect(self.response_text)
 
         if point in threshold_rect:
-            SETTINGS.threshold += int(scroll_y)
-            SETTINGS.threshold = max(0, self.webcam.threshold)
+            settings.capture_threshold = max(0, settings.capture_threshold + int(scroll_y))
         elif point in downsample_rect:
-            old_ds = self.webcam.downsample
-            SETTINGS.downsample += int(scroll_y)
-            SETTINGS.downsample = max(1, self.webcam.downsample)
-            ratio = (old_ds / self.webcam.downsample)
-            SETTINGS.polled_points *= ratio
-            SETTINGS.polled_points = int(max(1, SETTINGS.polled_points))
+            settings.capture_downsample = max(1, settings.capture_downsample + int(scroll_y))
         elif point in sampled_points_rect:
-            SETTINGS.polled_points += int(scroll_y)
-            SETTINGS.polled_points = max(1, SETTINGS.polled_points)
+            settings.capture_count = max(1, settings.capture_count + int(scroll_y))
         elif point in frequency_rect:
-            SETTINGS.frequency += scroll_y * 0.1
+            settings.motion_frequency += scroll_y * 0.1
         elif point in dampening_rect:
-            SETTINGS.dampening += scroll_y * 0.1
+            settings.motion_dampening += scroll_y * 0.1
         elif point in response_rect:
-            SETTINGS.response += scroll_y * 0.1
+            settings.motion_response += scroll_y * 0.1
 
     def on_update(self, delta_time: float) -> None:
         self.webcam.update(delta_time)
-        self.button.update(delta_time, self.webcam.cursor)
+        self.button.update(delta_time, self.webcam.mapped_cursor)
         self.update_ui(delta_time)
 
     def update_ui(self, delta_time: float) -> None:

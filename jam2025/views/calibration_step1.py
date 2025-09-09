@@ -14,7 +14,7 @@ from jam2025.lib.anim import ease_quadinout, ease_quadout, lerp, perc
 from jam2025.lib.logging import logger
 from jam2025.core.webcam import WebcamController
 from jam2025.lib.typing import FOREVER
-from jam2025.core.settings import SETTINGS
+from jam2025.core.settings import settings
 from jam2025.lib.utils import open_settings
 
 class Phase(IntEnum):
@@ -35,7 +35,7 @@ class MouseCalibrationView(View):
         self.music = load_music("found-in-space-17")
         self.player = self.music.play(volume = 0.0, loop = True)
 
-        self.webcam = WebcamController(0)
+        self.webcam = WebcamController(settings.webcam_id, settings.webcam_name)
         self.webcam.sprite.size = (self.size[0] / 2, self.size[1] / 2)
         self.webcam.sprite.center_x = self.center_x
         self.webcam.sprite.top = self.window.rect.top - 100
@@ -103,15 +103,15 @@ class MouseCalibrationView(View):
 
     def update_threshold(self, val: int) -> None:
         self.threshold_label.text = f"Threshold: {val}"
-        SETTINGS.threshold = val
+        settings.capture_threshold = val
 
     def update_downsample(self, val: int) -> None:
         self.downsample_label.text = f"Downsample: {val}"
-        SETTINGS.downsample = val
+        settings.capture_downsample = val
 
     def update_polled_points(self, val: int) -> None:
         self.polled_points_label.text = f"Polled Points: {val}"
-        SETTINGS.polled_points = val
+        settings.capture_count = val
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
         self.mouse_click = True
@@ -134,7 +134,7 @@ class MouseCalibrationView(View):
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.S:
-            open_settings(SETTINGS.device_name)
+            open_settings(settings.webcam_name)
 
     def on_update(self, delta_time: float) -> None:
         self.webcam.update(delta_time)

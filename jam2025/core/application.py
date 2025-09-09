@@ -1,9 +1,9 @@
 from arcade import Window as ArcadeWindow
 
-from .config import CONFIG
+from .settings import settings
 
 class Window(ArcadeWindow):
     def __init__(self) -> None:
-        super().__init__(CONFIG.window_width, CONFIG.window_height, "Pass The Torch | Jam 2025", update_rate = 1 / CONFIG.window_fps, fixed_rate = 1 / CONFIG.window_tps)
+        super().__init__(settings.window_width, settings.window_height, "Pass The Torch | Jam 2025", update_rate = 1 / settings.window_fps, fixed_rate = 1 / settings.window_tps)
 
 

@@ -47,6 +47,14 @@ class SelectWebcamView(ArcadeView):
         self.query_index = 0
         self.failed_queries = 0
 
+        padding = SelectWebcamView.PADDING
+        self.display_area = LRBT(
+            padding,
+            self.width - padding,
+            padding,
+            self.height - padding
+        )
+
     def on_hide_view(self) -> None:
         # This is a safety check by this point all the webcams should be cleared
         self.spritelist.clear()

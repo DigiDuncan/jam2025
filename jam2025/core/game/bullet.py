@@ -28,6 +28,8 @@ class Bullet:
 
         self._creation_time = GLOBAL_CLOCK.time
 
+        self.on_spawn()
+
     @property
     def position(self) -> Point2:
         return self.sprite.position
@@ -40,20 +42,45 @@ class Bullet:
         if self.owner is character:
             return
         if point_in_circle(character.position, character.size / 2, self.sprite.position) and self.live:
-            character.health -= self.damage
-            self.live = False
+            self.on_collide(character)
 
-    def update(self, delta_time: float) -> None:
+    def move(self, delta_time: float) -> None:
         """Override this for non-straight bullets."""
         self.direction = Vec2.from_heading(self.direction.heading() + (delta_time * self.angular_speed * math.tau))
 
         dx, dy = self.direction * self.speed * delta_time
         self.sprite.position = (self.sprite.position[0] + dx, self.sprite.position[1] + dy)
 
+    def update(self, delta_time: float) -> None:
+        self.on_update(delta_time)
+        self.move(delta_time)
         if self._creation_time + self.live_time < GLOBAL_CLOCK.time:
             self.live = False
+            self.on_death()
+            self.on_timeout()
 
     def draw(self) -> None:
+        ...
+
+    def on_update(self, delta_time: float) -> None:
+        ...
+
+    def on_collide(self, character: Character) -> None:
+        character.health -= self.damage
+        self.live = False
+        self.on_death()
+        self.on_killed()
+
+    def on_spawn(self) -> None:
+        ...
+
+    def on_death(self) -> None:
+        ...
+
+    def on_killed(self) -> None:
+        ...
+
+    def on_timeout(self) -> None:
         ...
 
 class RainbowBullet(Bullet):

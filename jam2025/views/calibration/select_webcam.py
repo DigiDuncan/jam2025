@@ -1,4 +1,4 @@
-from arcade import View as ArcadeView, Sprite, SpriteList, LRBT
+from arcade import View as ArcadeView, Sprite, SpriteList, Rect, LRBT
 
 from jam2025.core.settings import settings
 from jam2025.core.webcam import SimpleAnimatedWebcamDisplay
@@ -18,6 +18,7 @@ class SelectWebcamView(ArcadeView):
     player selects a different view it will update the settings, and then write it
     to disk saving it for next time.
     """
+    WEBCAM_FAIL_CAP = 5
     PADDING = 30.0
     MAX_COLUMNS = 3
     
@@ -26,45 +27,32 @@ class SelectWebcamView(ArcadeView):
         super().__init__()
 
         self.query_index: int
-        self.finished_queries: bool = False
+        self.failed_queries: int
 
-        self.webcams: list[Webcam | None]
+        self.webcams: list[Webcam]
         self.displays: list[SimpleAnimatedWebcamDisplay | None]
         self.spritelist: SpriteList[Sprite]
 
-        self.display_area = LRBT(
-            SelectWebcamView.PADDING,
-            self.width - SelectWebcamView.PADDING,
-            SelectWebcamView.PADDING,
-            self.height - SelectWebcamView.PADDING
-        )
+        self.display_area: Rect
 
     def on_show_view(self) -> None:
-        print('heeeyooo')
-        self.webcams = []
-        self.displays = []
-        
         self.spritelist = SpriteList()
 
         initial_id = settings.webcam_id
         webcam = Webcam(initial_id)
         webcam.connect(True)
-        if initial_id != 0:
-            self.webcams = [None] * initial_id
-            self.webcams.append(webcam)
-            self.displays = [None] * (initial_id + 1)
-            self.query_index = 0
-        else:
-            self.webcams = [webcam]
-            self.displays = [None]
-            self.query_index = 0
+
+        self.webcams = [webcam]
+        self.displays = [None]
+        self.query_index = 0
+        self.failed_queries = 0
 
     def on_hide_view(self) -> None:
         # This is a safety check by this point all the webcams should be cleared
         self.spritelist.clear()
         for webcam in self.webcams:
-            if webcam is not None:
-                webcam.disconnect()
+            webcam.disconnect()
+        self.webcams = []
 
     def select_webcam(self, id: int):
         # TODO: select webcam
@@ -85,17 +73,17 @@ class SelectWebcamView(ArcadeView):
 
     def _validate_webcams(self):
         for idx, webcam in enumerate(self.webcams):
-            if webcam is None:
-                continue
-
             if webcam.failed:
-                self.finished_queries = True
+                webcam.disconnect()
+                self.failed_queries += 1
+                if idx == self.query_index:
+                    self.query_index += 1
                 continue
 
             if not webcam.connected:
                 continue
 
-             # the query index is a connected webcam so move on
+            # the query index is a connected webcam so move on
             if idx == self.query_index:
                 self.query_index += 1
             
@@ -108,7 +96,7 @@ class SelectWebcamView(ArcadeView):
                 self.spritelist.append(display.sprite)
                 self._layout_displays()
 
-        if self.finished_queries:
+        if self.failed_queries >= SelectWebcamView.WEBCAM_FAIL_CAP:
             return
 
         if self.query_index >= len(self.webcams):
@@ -116,11 +104,6 @@ class SelectWebcamView(ArcadeView):
             webcam.connect(True)
             self.webcams.append(webcam)
             self.displays.append(None)
-        elif self.webcams[self.query_index] is None:
-            webcam = Webcam(self.query_index)
-            self.webcams[self.query_index] = webcam
-            # Since this webcam was skipped to get to the .cfg idx then we don't need
-            # to prep for a new display
 
     def _layout_displays(self):
         active_displays = tuple(display for display in self.displays if display is not None)

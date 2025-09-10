@@ -45,8 +45,10 @@ class Webcam:
                 return
             logger.debug('set disconnect')
             self._webcam_disconnect = True
-            if self._webcam_state == Webcam.ERROR:
-                self._disconnect()
+            early_disconnect = self._webcam_state == Webcam.ERROR
+        
+        if early_disconnect:
+            self._disconnect()
 
         if block:
             logger.debug('started blocking')

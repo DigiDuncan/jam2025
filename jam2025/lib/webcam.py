@@ -162,7 +162,7 @@ class Webcam:
         with self._data_lock:
             self._webcam_state = Webcam.CONNECTING
         try:
-            webcam = cv2.VideoCapture(self._index)
+            webcam = cv2.VideoCapture(self._index, cv2.CAP_DSHOW)
             if not webcam.isOpened():
                 raise ValueError(f'webcam {self._index}: Cannot connect to webcam')
         except Exception as e:
@@ -190,6 +190,8 @@ class Webcam:
         # self._webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
         try:
+            self._webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            self._webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             size = int(self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps =  int(self._webcam.get(cv2.CAP_PROP_FPS))
         except Exception as e:

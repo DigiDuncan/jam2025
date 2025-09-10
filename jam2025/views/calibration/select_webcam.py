@@ -5,15 +5,14 @@ from jam2025.core.webcam import SimpleAnimatedWebcamDisplay
 
 from jam2025.lib.webcam import Webcam
 
-
 WEBCAM_FRACTIONS: tuple[tuple[tuple[float, float], ...], ...] = (
     (),
     ((1/2, 1/2),),
-    ((1/3, 1/2), (2/3, 1/2)),
-    ((1/3, 2/3), (2/3, 2/3), (1/2, 1/3)),
-    ((1/3, 2/3), (2/3, 2/3), (1/3, 1/3), (2/3, 1/3)),
-    ((1/4, 2/3), (2/4, 2/3), (3/4, 2/3), (1/3, 1/3), (2/3, 1/3)),
-    ((1/4, 2/3), (2/4, 2/3), (3/4, 2/3), (1/4, 1/3), (2/4, 1/3), (3/4, 1/3))
+    ((1/4, 1/2), (3/4, 1/2)),
+    ((1/4, 3/4), (3/4, 3/4), (1/2, 1/4)),
+    ((1/4, 3/4), (3/4, 3/4), (1/4, 1/4), (3/4, 1/4)),
+    ((1/6, 3/4), (3/6, 3/4), (5/6, 3/4), (1/4, 1/4), (3/4, 1/4)),
+    ((1/6, 3/4), (3/6, 3/4), (5/6, 3/4), (1/6, 1/4), (2/6, 1/4), (3/4, 1/4))
 )
 WEBCAM_SIZING = (
     (1, 1),
@@ -24,7 +23,6 @@ WEBCAM_SIZING = (
     (3, 2),
     (3, 2),
 )
-
 
 class SelectWebcamView(ArcadeView):
     """
@@ -40,7 +38,7 @@ class SelectWebcamView(ArcadeView):
     """
     WEBCAM_FAIL_CAP = 5
     WEBCAM_CAP = 6
-    PADDING = 30.0
+    PADDING = 80.0
 
     def __init__(self) -> None:
         super().__init__()
@@ -49,6 +47,7 @@ class SelectWebcamView(ArcadeView):
         self.failed_queries: int
 
         self.connecting_webcam: Webcam | None
+        self.hovered_display: SimpleAnimatedWebcamDisplay | None
 
         self.webcams: list[Webcam]
         self.displays: list[SimpleAnimatedWebcamDisplay]
@@ -58,25 +57,34 @@ class SelectWebcamView(ArcadeView):
 
     def on_show_view(self) -> None:
         self.spritelist = SpriteList()
+        padding = SelectWebcamView.PADDING
+        self.display_area = LRBT(
+            padding*0.5,
+            self.width - padding*0.5,
+            padding*0.5,
+            self.height - padding*0.5
+        )
+
+        if settings.connected_webcam is not None:
+            pass    
 
         initial_id = settings.webcam_id
         webcam = Webcam(initial_id)
         webcam.connect(True)
 
         self.connecting_webcam = webcam
+        self.hovered_display = None
+        self.clicked_display = None
 
         self.webcams = []
         self.displays = []
         self.query_index = 0
         self.failed_queries = 0
 
-        padding = SelectWebcamView.PADDING
-        self.display_area = LRBT(
-            padding,
-            self.width - padding,
-            padding,
-            self.height - padding
-        )
+    def _create_display(self, webcam: Webcam) -> SimpleAnimatedWebcamDisplay:
+        display = SimpleAnimatedWebcamDisplay(webcam)
+        self.spritelist.append(display.sprite)
+        return display
 
     def on_hide_view(self) -> None:
         # This is a safety check by this point all the webcams should be cleared
@@ -95,7 +103,6 @@ class SelectWebcamView(ArcadeView):
 
     def on_update(self, delta_time: float) -> bool | None:
         # TODO: handle failing to connect to even one webcam
-        # TODO: connect new webcams and move em to the right spot
         self._validate_webcams()
 
         for display in self.displays:
@@ -137,15 +144,43 @@ class SelectWebcamView(ArcadeView):
         displays = self.displays
         count = len(displays)
 
-        position_arrays = WEBCAM_FRACTIONS[count]
-        columns, rows = WEBCAM_SIZING[count]
+        if not displays:
+            return
 
-        width = (self.display_area.width - (columns - 1) * padding)
-        print(self.display_area.width, width)
-        height = (self.display_area.height - (rows - 1) * padding)
-        max_size = (width / columns, height / rows)
-        for display, position in zip(self.displays, position_arrays):
+        positions = WEBCAM_FRACTIONS[count]
+        sizing = WEBCAM_SIZING[count]
+
+        width = self.display_area.width / sizing[0]
+        height = self.display_area.height / sizing[1]
+        full_size = width, height
+        size = width - padding, height - padding
+        sub_size = width - 2*padding, height - 2*padding
+
+        for position, display in zip(positions, displays):
             display.target_position = self.display_area.uv_to_position(position)
-            display.update_max_size(max_size)
-    
-        
+            if display is self.clicked_display:
+                display.update_max_size(sub_size)
+            else:
+                display.update_max_size(full_size if display is self.hovered_display else size)
+
+
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
+        p = (x, y)
+
+        for display in self.displays:
+            if display.contains_point(p):
+                if display == self.hovered_display:
+                    break
+                self.hovered_display = display
+                self._layout_displays()
+                break
+        else:
+            if self.hovered_display is not None:
+                self.hovered_display = None
+                self._layout_displays()
+
+    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
+        pass
+
+    def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
+        pass

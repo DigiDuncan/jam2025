@@ -67,8 +67,8 @@ class _Settings:
     # -- SETTINGS OBSERVER CODE --
 
     def __setattr__(self, name: str, value: Any) -> None:
+        object.__setattr__(self, name, value)
         if name.startswith('_'):
-            object.__setattr__(self, name, value)
             return
         
         for func, mask in self._refresh_functions.items():

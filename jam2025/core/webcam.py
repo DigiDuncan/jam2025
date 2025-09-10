@@ -1,7 +1,7 @@
 import arcade
 import numpy as np
 
-from arcade import Vec2, Sprite, Texture, SpriteSolidColor
+from arcade import Vec2, Sprite, Texture
 from arcade.types import Point2
 from arcade.math import smerp_2d
 from PIL import Image
@@ -16,7 +16,7 @@ from jam2025.lib.utils import frame_data_to_image, rgb_to_l
 class SimpleAnimatedWebcamDisplay:
     # !! This assumes the webcam is connected and reading
     # !! only one display works per webcam since reading the frame is destructive
-    ANIMATION_SPEED = 0.2
+    ANIMATION_SPEED = 0.1
 
     def __init__(self, webcam: Webcam) -> None:
         self.webcam: Webcam = webcam

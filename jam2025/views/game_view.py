@@ -1,4 +1,5 @@
 from arcade import View, Vec2, LBWH
+import arcade
 
 from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet
 from jam2025.core.game.character import Character
@@ -9,8 +10,6 @@ from jam2025.core.webcam import WebcamController
 
 from jam2025.core.settings import settings
 
-PLAYER_MAX_HEALTH = 100
-
 class GameView(View):
 
     def __init__(self) -> None:
@@ -20,6 +19,8 @@ class GameView(View):
         self.player = self.music.play(volume = 0.05, loop = True)
 
         self.character = Character()
+        self.character.position = Vec2(0, 0)
+        self.character.debug = True
 
         self.bullet_list = BulletList()
         self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
@@ -30,6 +31,18 @@ class GameView(View):
         self.webcam.debug = True
         self.webcam.sprite.size = self.size
         self.webcam.sprite.position = self.center
+        self.webcam.sprite.alpha = 128
+
+        self.use_mouse = False
+        self.mouse_pos = self.center
+
+    def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
+        if symbol == arcade.key.M:
+            self.use_mouse = not self.use_mouse
+            self.window.set_mouse_visible(not self.use_mouse)
+        elif symbol == arcade.key.D:
+            self.webcam.debug = not self.webcam.debug
+            self.character.debug = not self.character.debug
 
     def reset(self) -> None:
         self.player.seek(0.0)
@@ -40,12 +53,15 @@ class GameView(View):
 
         self.emitter.set_pattern(PATTERNS["fourwayspin"])
 
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
+        self.mouse_pos = (x, y)
+
     def on_update(self, delta_time: float) -> bool | None:
         if self.webcam.webcam.connected:
             self.webcam.update(delta_time)
-            self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor))
+            self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         else:
-            self.character.update(delta_time, Vec2(*self.center))
+            self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         self.bullet_list.update(delta_time, self.character)
         self.emitter.update(delta_time)
 

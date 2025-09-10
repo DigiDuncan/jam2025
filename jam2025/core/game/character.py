@@ -1,4 +1,5 @@
 from arcade import Vec2
+import arcade
 from arcade.types import Point2
 
 from jam2025.core.game.lux import PlayerRenderer, LuxRenderer
@@ -12,6 +13,7 @@ class Character:
 
         # self.renderer = PlayerRenderer()
         self.renderer = LuxRenderer()
+        self.debug = False
 
     def reset(self):
         self.position = Vec2()
@@ -33,3 +35,8 @@ class Character:
 
     def draw(self) -> None:
         self.renderer.draw()
+        if self.debug:
+            self.debug_draw()
+
+    def debug_draw(self) -> None:
+        arcade.draw_circle_outline(*self.position, self.size, arcade.color.RED, 3)

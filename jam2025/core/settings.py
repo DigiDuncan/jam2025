@@ -76,7 +76,7 @@ class _Settings:
             if mask is None or name in mask:
                 func()() # type: ignore -- because it's a weakref we have to deref it first
 
-    def update_values(self, **kwds: dict[str, Any]):
+    def update_values(self, **kwds: Any):
         for name, value in kwds.items():
             object.__setattr__(self, name, value)
         updated = set(kwds)

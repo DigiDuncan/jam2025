@@ -108,7 +108,7 @@ class Webcam:
             return frame
         except queue.Empty:
             return None
-
+    
     # -- WEBCAM ATTRIBUTE PROPERTIES --
 
     @property

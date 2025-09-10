@@ -30,7 +30,7 @@ class Transition:
         for name, (view, persistent) in views.items():
             self.add_view(name, view, persistent)
 
-    def show_view(self, name: str, *args: tuple[Any, ...], **kwds: dict[str, Any]) -> None:
+    def show_view(self, name: str, *args: Any, **kwds: Any) -> None:
         if name not in self._views:
             raise KeyError(f"{name} is not a registered view")
 

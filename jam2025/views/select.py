@@ -25,5 +25,3 @@ class ViewSelectView(ArcadeView):
 
         if closest is not None:
             navigation.show_view(closest.text)
-            print(closest.text)
-            

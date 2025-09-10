@@ -13,8 +13,9 @@ class Webcam:
     CONNECTED: WebcamState = 2 # has found camera and has properties
     ERROR: WebcamState = 3 # Something broke relating to the webcam
 
-    def __init__(self, index: int = 0):
+    def __init__(self, index: int = 0, use_dshow: bool = False):
         self._index: int = index
+        self._dshow: bool = use_dshow
         self._webcam: cv2.VideoCapture | None = None
 
         # Webcam properties that must be read through the data lock
@@ -162,7 +163,7 @@ class Webcam:
         with self._data_lock:
             self._webcam_state = Webcam.CONNECTING
         try:
-            webcam = cv2.VideoCapture(self._index, cv2.CAP_DSHOW)
+            webcam = cv2.VideoCapture(self._index, cv2.CAP_DSHOW if self._dshow else 0)
             if not webcam.isOpened():
                 raise ValueError(f'webcam {self._index}: Cannot connect to webcam')
         except Exception as e:

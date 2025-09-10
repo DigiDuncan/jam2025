@@ -1,4 +1,4 @@
-from arcade import View as ArcadeView, Text, Window
+from arcade import View as ArcadeView, Text
 from pyglet.graphics import Batch
 
 from jam2025.core.navigation import navigation

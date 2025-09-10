@@ -51,6 +51,7 @@ class _Settings:
         self.webcam_exposure: float
         self.webcam_flip: bool
         self.webcam_bounds: tuple[float, float, float, float]
+        self.webcam_dshow: bool
         
         self.capture_threshold: int
         self.capture_downsample: int
@@ -143,6 +144,7 @@ _MAPPING: dict[str, dict[str, settingMapping]] = {
         "width": ("webcam_width", 1280),
         "height": ("webcam_height", 720),
         "exposure": ("webcam_exposure", -5.0),
+        "use_dshow": ("webcam_dshow", False),
     },
     "calibration": {
         "name": ("webcam_name", "NO DEVICE NAME SET"),
@@ -165,8 +167,8 @@ def load_settings() -> _Settings:
     
     values: dict[str, Any] = {}
     for group, data in _MAPPING.items():
-        for name, (attr, _) in data.items():
-            values[attr] = toml[group][name]
+        for name, (attr, default) in data.items():
+            values[attr] = toml.get(group, {}).get(name, default)
 
     return _Settings(values)
 

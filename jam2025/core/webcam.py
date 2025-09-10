@@ -55,7 +55,7 @@ class SimpleAnimatedWebcamDisplay:
         if self.webcam_size[1] < h:
             h = self.webcam_size[1]
 
-        ratio = w / h
+        ratio = self.webcam_size[0] / self.webcam_size[1]
         self.max_size = w, h
         if h * ratio < w: # on ratio width fits within max_width
             self.target_size = h * ratio, h

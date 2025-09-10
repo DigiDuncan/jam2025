@@ -6,6 +6,26 @@ from jam2025.core.webcam import SimpleAnimatedWebcamDisplay
 from jam2025.lib.webcam import Webcam
 
 
+WEBCAM_FRACTIONS: tuple[tuple[tuple[float, float], ...], ...] = (
+    (),
+    ((1/2, 1/2),),
+    ((1/3, 1/2), (2/3, 1/2)),
+    ((1/3, 2/3), (2/3, 2/3), (1/2, 1/3)),
+    ((1/3, 2/3), (2/3, 2/3), (1/3, 1/3), (2/3, 1/3)),
+    ((1/4, 2/3), (2/4, 2/3), (3/4, 2/3), (1/3, 1/3), (2/3, 1/3)),
+    ((1/4, 2/3), (2/4, 2/3), (3/4, 2/3), (1/4, 1/3), (2/4, 1/3), (3/4, 1/3))
+)
+WEBCAM_SIZING = (
+    (1, 1),
+    (1, 1),
+    (2, 1),
+    (2, 2),
+    (2, 2),
+    (3, 2),
+    (3, 2),
+)
+
+
 class SelectWebcamView(ArcadeView):
     """
     The goal of this view is to let the player select which webcam to use.
@@ -19,9 +39,8 @@ class SelectWebcamView(ArcadeView):
     to disk saving it for next time.
     """
     WEBCAM_FAIL_CAP = 5
+    WEBCAM_CAP = 6
     PADDING = 30.0
-    MAX_COLUMNS = 3
-    
 
     def __init__(self) -> None:
         super().__init__()
@@ -106,41 +125,27 @@ class SelectWebcamView(ArcadeView):
             self.connecting_webcam = None
             return
         self.query_index += 1
+        if self.query_index >= SelectWebcamView.WEBCAM_CAP:
+            self.connecting_webcam = None
+            return
         self.connecting_webcam = Webcam(self.query_index)
         self.connecting_webcam.connect(True)
 
 
     def _layout_displays(self):
-        displays = self.displays
-        max_columns = SelectWebcamView.MAX_COLUMNS
         padding = SelectWebcamView.PADDING
-
+        displays = self.displays
         count = len(displays)
-        remainder = count % max_columns
 
-        columns = min(max_columns, count)
-        rows = count // max_columns + 1
-        
-        max_width = self.display_area.width - (columns - 1) * padding
-        max_height = self.display_area.height - (rows - 1) * padding
-        max_size = (max_width, max_height)
-        dx, dy = max_width + padding, max_height + padding
-        hx, hy = max_width * 0.5, max_height * 0.5
-        for idx, display in enumerate(displays[:-remainder]):
-            row = idx // max_columns
-            column = idx % max_columns
-            x = self.display_area.left + column * dx + hx
-            y = self.display_area.top - row * dy - hy
-            display.target_position = (x, y)
-            display.update_max_size(max_size)
+        position_arrays = WEBCAM_FRACTIONS[count]
+        columns, rows = WEBCAM_SIZING[count]
 
-        if remainder == 0:
-            return
-
-        dx = self.display_area.width / remainder
-        y = self.display_area.bottom + hy
-        for idx, display in enumerate(displays[-remainder:]):
-            display.target_position = ((idx + 0.5) * dx, y)
+        width = (self.display_area.width - (columns - 1) * padding)
+        print(self.display_area.width, width)
+        height = (self.display_area.height - (rows - 1) * padding)
+        max_size = (width / columns, height / rows)
+        for display, position in zip(self.displays, position_arrays):
+            display.target_position = self.display_area.uv_to_position(position)
             display.update_max_size(max_size)
     
         

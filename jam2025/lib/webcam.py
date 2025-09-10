@@ -35,7 +35,7 @@ class Webcam:
         with self._data_lock:
             invalid_connection = self._webcam_state != self.DISCONNECTED
         if invalid_connection:
-            raise ValueError('Webcam has already been connected, call disconnect first.')
+            raise ValueError(f'Webcam {self._index} has already been connected, call disconnect first.')
         self._webcam_read = start_reading
         self._thread.start()
 
@@ -84,7 +84,7 @@ class Webcam:
             # This happens last as a safety check. We can't start a thread that
             # has already been started, even if it's dead.
             self._webcam_state: WebcamState = Webcam.DISCONNECTED
-        logger.debug(f'webcam {self._index}:finished disconnecting')
+        logger.debug(f'webcam {self._index}: finished disconnecting')
 
     def reconnect(self, start_reading: bool = False) -> None:
         # Disconnect the camera, and block until that is done, then reconnect.
@@ -158,7 +158,9 @@ class Webcam:
     # -- THREAD METHOD --
 
     def _poll(self) -> None:
-        logger.debug(f'webcam {self._index}:thread started')
+        logger.debug(f'webcam {self._index}: thread started')
+        with self._data_lock:
+            self._webcam_state = Webcam.CONNECTING
         try:
             webcam = cv2.VideoCapture(self._index)
             if not webcam.isOpened():

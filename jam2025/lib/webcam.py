@@ -254,13 +254,15 @@ class Webcam:
             except Exception as e:
                 with self._data_lock:
                     self._webcam_state = Webcam.ERROR
-                raise e
-
+                logger.error(e)
+                break
+            
             if not retval:
                 with self._data_lock:
                     self._webcam_state = Webcam.ERROR
-                raise ValueError('Failed to Read Frame (camera most likely disconnected).')
-            frame = frame[:, :, ::-1]
-            self._frames.put(frame) # Flip the BGR to RGB on thread
+                logger.error(ValueError('Failed to Read Frame (camera most likely disconnected).'))
+                break
+            frame = frame[:, :, ::-1] # Flip the BGR to RGB on thread
+            self._frames.put(frame) 
 
         self._disconnect()

@@ -166,7 +166,10 @@ class Webcam:
         except Exception as e:
             with self._data_lock:
                 self._webcam_state = Webcam.ERROR
-            raise e
+            logger.error(e)
+            self._disconnect()
+            return
+
         logger.debug('connected to webcam')
 
         with self._data_lock:

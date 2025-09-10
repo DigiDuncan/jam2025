@@ -103,10 +103,11 @@ class Webcam:
         except queue.Empty:
             return None
 
+    # -- WEBCAM ATTRIBUTE PROPERTIES --
+
     @property
-    def state(self) -> WebcamState:
-        with self._data_lock:
-            return self._webcam_state
+    def index(self) -> int:
+        return self._index
 
     @property
     def size(self) -> tuple[int, int]:
@@ -121,11 +122,35 @@ class Webcam:
             if self._webcam_fps is None:
                 raise ValueError('Webcam is not connected')
             return self._webcam_fps
+    
+    # -- STATE PROPERTIES --
+
+    @property
+    def state(self) -> WebcamState:
+        with self._data_lock:
+            return self._webcam_state
+
+    @property
+    def disconnected(self) -> bool:
+        with self._data_lock:
+            return self._webcam_state == Webcam.DISCONNECTED
+
+    @property
+    def connecting(self) -> bool:
+        with self._data_lock:
+            return self._webcam_state == Webcam.CONNECTING
 
     @property
     def connected(self) -> bool:
         with self._data_lock:
             return self._webcam_state == Webcam.CONNECTED
+
+    @property
+    def failed(self) -> bool:
+        with self._data_lock:
+            return self._webcam_state == Webcam.ERROR
+
+    # -- THREAD METHOD --
 
     def _poll(self) -> None:
         logger.debug('thread started')
@@ -154,37 +179,42 @@ class Webcam:
         # self._webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         # self._webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-        size = int(self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps =  int(self._webcam.get(cv2.CAP_PROP_FPS))
+        try:
+            size = int(self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps =  int(self._webcam.get(cv2.CAP_PROP_FPS))
+        except Exception as e:
+            with self._data_lock:
+                self._webcam_state = Webcam.ERROR
+            raise e
 
         with self._data_lock:
             self._webcam_size = size
             self._webcam_fps = fps
             self._webcam_state = Webcam.CONNECTED
 
-            # print("cv2.CAP_PROP_FRAME_WIDTH))", self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH)) # Static (for my camera)
-            # print("cv2.CAP_PROP_FRAME_HEIGHT))", self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT)) # Static (for my camera)
-            # print("cv2.CAP_PROP_FPS))", self._webcam.get(cv2.CAP_PROP_FPS)) # Controlable (for my camera)
-            # print("cv2.CAP_PROP_FOURCC))", self._webcam.get(cv2.CAP_PROP_FOURCC)) # Static (for my camera, do we care about it.)
+            # print("cv2.CAP_PROP_FRAME_WIDTH))", self._webcam.get(cv2.CAP_PROP_FRAME_WIDTH))
+            # print("cv2.CAP_PROP_FRAME_HEIGHT))", self._webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            # print("cv2.CAP_PROP_FPS))", self._webcam.get(cv2.CAP_PROP_FPS))
+            # print("cv2.CAP_PROP_FOURCC))", self._webcam.get(cv2.CAP_PROP_FOURCC))
             # print("cv2.CAP_PROP_BRIGHTNESS))", self._webcam.get(cv2.CAP_PROP_BRIGHTNESS))
             # print("cv2.CAP_PROP_CONTRAST))", self._webcam.get(cv2.CAP_PROP_CONTRAST))
             # print("cv2.CAP_PROP_SATURATION))", self._webcam.get(cv2.CAP_PROP_SATURATION))
             # print("cv2.CAP_PROP_HUE))", self._webcam.get(cv2.CAP_PROP_HUE))
             # print("cv2.CAP_PROP_GAIN))", self._webcam.get(cv2.CAP_PROP_GAIN))
-            print("cv2.CAP_PROP_EXPOSURE))", self._webcam.get(cv2.CAP_PROP_EXPOSURE))
+            # print("cv2.CAP_PROP_EXPOSURE))", self._webcam.get(cv2.CAP_PROP_EXPOSURE))
             # print("cv2.CAP_PROP_CONVERT_RGB))", self._webcam.get(cv2.CAP_PROP_CONVERT_RGB))
             # print("cv2.CAP_PROP_WHITE_BALANCE_BLUE_U))", self._webcam.get(cv2.CAP_PROP_WHITE_BALANCE_BLUE_U))
             # print("cv2.CAP_PROP_RECTIFICATION))", self._webcam.get(cv2.CAP_PROP_RECTIFICATION))
             # print("cv2.CAP_PROP_MONOCHROME))", self._webcam.get(cv2.CAP_PROP_MONOCHROME))
             # print("cv2.CAP_PROP_SHARPNESS))", self._webcam.get(cv2.CAP_PROP_SHARPNESS))
-            print("cv2.CAP_PROP_AUTO_EXPOSURE))", self._webcam.get(cv2.CAP_PROP_AUTO_EXPOSURE))
+            # print("cv2.CAP_PROP_AUTO_EXPOSURE))", self._webcam.get(cv2.CAP_PROP_AUTO_EXPOSURE))
             # print("cv2.CAP_PROP_GAMMA))", self._webcam.get(cv2.CAP_PROP_GAMMA))
             # print("cv2.CAP_PROP_TEMPERATURE))", self._webcam.get(cv2.CAP_PROP_TEMPERATURE))
             # print("cv2.CAP_PROP_TRIGGER))", self._webcam.get(cv2.CAP_PROP_TRIGGER))
             # print("cv2.CAP_PROP_TRIGGER_DELAY))", self._webcam.get(cv2.CAP_PROP_TRIGGER_DELAY))
             # print("cv2.CAP_PROP_WHITE_BALANCE_RED_V))", self._webcam.get(cv2.CAP_PROP_WHITE_BALANCE_RED_V))
             # print("cv2.CAP_PROP_ZOOM))", self._webcam.get(cv2.CAP_PROP_ZOOM))
-            print("cv2.CAP_PROP_FOCUS))", self._webcam.get(cv2.CAP_PROP_FOCUS))
+            # print("cv2.CAP_PROP_FOCUS))", self._webcam.get(cv2.CAP_PROP_FOCUS))
             # print("cv2.CAP_PROP_GUID))", self._webcam.get(cv2.CAP_PROP_GUID))
             # print("cv2.CAP_PROP_ISO_SPEED))", self._webcam.get(cv2.CAP_PROP_ISO_SPEED))
             # print("cv2.CAP_PROP_BACKLIGHT))", self._webcam.get(cv2.CAP_PROP_BACKLIGHT))
@@ -194,15 +224,11 @@ class Webcam:
             # print("cv2.CAP_PROP_IRIS))", self._webcam.get(cv2.CAP_PROP_IRIS))
             # print("cv2.CAP_PROP_SETTINGS))", self._webcam.get(cv2.CAP_PROP_SETTINGS))
             # print("cv2.CAP_PROP_BUFFERSIZE))", self._webcam.get(cv2.CAP_PROP_BUFFERSIZE))
-            print("cv2.CAP_PROP_AUTOFOCUS))", self._webcam.get(cv2.CAP_PROP_AUTOFOCUS))
+            # print("cv2.CAP_PROP_AUTOFOCUS))", self._webcam.get(cv2.CAP_PROP_AUTOFOCUS))
             # print("cv2.CAP_PROP_CHANNEL))", self._webcam.get(cv2.CAP_PROP_CHANNEL))
             # print("cv2.CAP_PROP_AUTO_WB))", self._webcam.get(cv2.CAP_PROP_AUTO_WB))
             # print("cv2.CAP_PROP_WB_TEMPERATURE))", self._webcam.get(cv2.CAP_PROP_WB_TEMPERATURE))
             logger.debug('finished connecting')
-
-        if self._webcam_state == Webcam.ERROR:
-            # This shouldn't really be possible.
-            return
 
         while True:
             # Could maybe be done with a threading.event but this is fine for now
@@ -226,10 +252,10 @@ class Webcam:
                 raise e
 
             if not retval:
-                # This should maybe set the Webcam state to Error.
                 with self._data_lock:
                     self._webcam_state = Webcam.ERROR
                 raise ValueError('Failed to Read Frame (camera most likely disconnected).')
-            self._frames.put(frame)
+            frame = frame[:, :, ::-1]
+            self._frames.put(frame) # Flip the BGR to RGB on thread
 
         self._disconnect()

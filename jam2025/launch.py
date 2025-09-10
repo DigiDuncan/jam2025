@@ -3,13 +3,14 @@ from .core.navigation import navigation
 from .core.application import Window
 from jam2025.lib import logging
 
-from .views import MouseCalibrationView, PlayerTestView, IntegrationTestView
+from .views import MouseCalibrationView, PlayerTestView, IntegrationTestView, SelectWebcamView
 
 def launch() -> None:
     navigation.add_views({
         "m_calibration": (MouseCalibrationView, False),
         "p_test": (PlayerTestView, False),
-        "i_test1": (IntegrationTestView, False)
+        "i_test1": (IntegrationTestView, False),
+        "select_webcam": (SelectWebcamView, False)
     })
 
     logging.setup()

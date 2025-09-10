@@ -1,3 +1,4 @@
+from typing import Any
 from arcade import get_window, View
 
 __all__ = (
@@ -25,13 +26,13 @@ class Transition:
         for name, (view, persistent) in views.items():
             self.add_view(name, view, persistent)
 
-    def show_view(self, name: str) -> None:
+    def show_view(self, name: str, *args: tuple[Any, ...], **kwds: dict[str, Any]) -> None:
         if name not in self._views:
             raise KeyError(f"{name} is not a registered view")
 
         typ = self._views[name]
         if name not in self._persistent:
-            view = typ()
+            view = typ(*args, **kwds)
         else:
             view = self._persistent[name]
             if view is None:

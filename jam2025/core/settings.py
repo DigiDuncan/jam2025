@@ -1,14 +1,15 @@
 from __future__ import annotations
 from collections.abc import Callable, Sequence
 from weakref import WeakMethod
-from logging import getLogger
 from typing import Any
 from pathlib import Path
 from sys import platform
 from tomllib import load
 from tomli_w import dump
 
-logger = getLogger("jam2025")
+from jam2025.lib.logging import logger
+from jam2025.lib.webcam import Webcam
+
 
 __all__ = (
     "settings",
@@ -21,6 +22,11 @@ class _Settings:
 
     def __init__(self, values: dict[str, Any]) -> None:
         self._refresh_functions: dict[WeakRefreshFunc, set[str] | None] = {}
+
+        # Context values (change during run time and are none-able)
+        # ! I didn't want to add even more global state in another singleton
+        self.connected_webcam: Webcam | None = None
+        self.skipped_capture_consent: bool = True
 
         # Config (change during development)
         self.window_width: int
@@ -58,6 +64,8 @@ class _Settings:
 
         self.update_values(**values)
 
+    # -- SETTINGS OBSERVER CODE --
+
     def __setattr__(self, name: str, value: Any) -> None:
         if name.startswith('_'):
             object.__setattr__(self, name, value)
@@ -90,6 +98,8 @@ class _Settings:
             return
         self._refresh_functions.pop(w)
 
+    # -- UTILITY PROPERTIES AND METHODS --
+
     @property
     def platform(self):
         return self._platform
@@ -97,6 +107,15 @@ class _Settings:
     @property
     def is_windows(self):
         return self._platform == 'win32'
+    
+    @property
+    def has_webcam(self):
+        return self.connected_webcam is not None
+    
+    @property
+    def webcam_connected(self):
+        return self.connected_webcam is not None and self.connected_webcam.connected
+        
 
 type settingMapping = tuple[str, Any]
 _MAPPING: dict[str, dict[str, settingMapping]] = {

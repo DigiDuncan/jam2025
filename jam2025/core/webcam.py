@@ -1,8 +1,9 @@
 import arcade
 import numpy as np
 
-from arcade import Vec2
+from arcade import Vec2, Sprite, Texture, SpriteSolidColor
 from arcade.types import Point2
+from arcade.math import smerp_2d
 from PIL import Image
 
 from .settings import settings
@@ -11,6 +12,79 @@ from jam2025.lib.webcam import Webcam
 from jam2025.lib.logging import logger
 from jam2025.lib.procedural_animator import SecondOrderAnimatorKClamped
 from jam2025.lib.utils import frame_data_to_image, rgb_to_l
+
+class SimpleAnimatedWebcamDisplay:
+    # !! This assumes the webcam is connected and reading
+    # !! only one display works per webcam since reading the frame is destructive
+    ANIMATION_SPEED = 0.2
+
+    def __init__(self, webcam: Webcam) -> None:
+        self.webcam: Webcam = webcam
+        self.webcam_size: Point2 = webcam.size
+
+        self.target_position: Point2 = (0.0, 0.0)
+        self.target_size: Point2 = self.webcam_size
+        self.max_size: Point2 = self.webcam_size
+
+        self.frame = None
+
+        self.sprite: Sprite = Sprite()
+
+    def _update_texture(self):
+        frame = self.webcam.get_frame()
+        if frame is None:
+            return
+        self.frame = frame
+        img = frame_data_to_image(frame).convert("RGBA")
+        tex = Texture(img)
+        size = self.sprite.size
+        self.sprite.texture = tex
+        self.sprite.size = size # type: ignore -- should be Point2 not Point
+        
+    def contains_point(self, point: Point2):
+        return (
+            self.sprite.left <= point[0] <= self.sprite.right and
+            self.sprite.bottom <= point[1] <= self.sprite.top
+        )
+
+    def update_max_size(self, max_size: Point2):
+        w, h = max_size
+        if self.webcam_size[0] < w:
+            w = self.webcam_size[0]
+
+        if self.webcam_size[1] < h:
+            h = self.webcam_size[1]
+
+        ratio = w / h
+        self.max_size = w, h
+        if h * ratio < w: # on ratio width fits within max_width
+            self.target_size = h * ratio, h
+        else:
+            self.target_size = w, w / ratio
+
+    def update(self, delta_time: float):
+        x, y = self.sprite.position
+        tx, ty = self.target_position
+        if abs(x - tx) > 1.0 or abs(y - ty) > 1.0:
+            self.sprite.position = smerp_2d(
+                self.sprite.position,
+                self.target_position,
+                delta_time,
+                SimpleAnimatedWebcamDisplay.ANIMATION_SPEED
+            )
+
+        w, h = self.sprite.size # type: ignore -- should be Point2 not Point
+        tw, th = self.target_size
+        if abs(w - tw) > 1.0 or abs(h - th) > 1.0:
+            self.sprite.size = smerp_2d(
+                self.sprite.size, # type: ignore -- should be Point2 not Point
+                self.target_size,
+                delta_time,
+                SimpleAnimatedWebcamDisplay.ANIMATION_SPEED
+            )
+
+        self._update_texture()
+
 
 class WebcamController:
     def __init__(self, index: int, name: str, scaling: int = 1, region: arcade.Rect | None = None, bounds: arcade.Rect | None = None) -> None:
@@ -161,7 +235,6 @@ class WebcamController:
             rect = arcade.LRBT(l, r, b, t)
             self.sprite.position = self.crunchy_sprite.position = rect.center
             self.sprite.size = self.crunchy_sprite.size = rect.size
-        frame = frame[:, :, ::-1]  # The camera data is BGR for some reason
         if self.flip:
             frame = np.fliplr(frame)
         return frame

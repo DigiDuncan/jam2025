@@ -43,7 +43,7 @@ class Webcam:
         with self._data_lock:
             if self._webcam is None:
                 return
-            logger.debug('set disconnect')
+            logger.debug(f'webcam {self._index}: set disconnect')
             self._webcam_disconnect = True
             early_disconnect = self._webcam_state == Webcam.ERROR
         
@@ -51,17 +51,17 @@ class Webcam:
             self._disconnect()
 
         if block:
-            logger.debug('started blocking')
+            logger.debug(f'webcam {self._index}: started blocking')
             # Block the disconnect thread until the disconnect msg has been recieved.
             # This might be unsafe as there is no timeout, but it's only unsafe
             # If I have fucked up.
             self._thread.join()
-            logger.debug('finished blocking')
+            logger.debug(f'webcam {self._index}: finished blocking')
 
     def _disconnect(self) -> None:
         # This is also run in the thread if we have to wait to disconnect
         # so this has to be a seperate call.
-        logger.debug('disconnecting')
+        logger.debug(f'webcam {self._index}: disconnecting')
         with self._data_lock:
             if self._webcam is not None:
                 self._webcam.release()
@@ -84,7 +84,7 @@ class Webcam:
             # This happens last as a safety check. We can't start a thread that
             # has already been started, even if it's dead.
             self._webcam_state: WebcamState = Webcam.DISCONNECTED
-        logger.debug('finished disconnecting')
+        logger.debug(f'webcam {self._index}:finished disconnecting')
 
     def reconnect(self, start_reading: bool = False) -> None:
         # Disconnect the camera, and block until that is done, then reconnect.
@@ -125,7 +125,7 @@ class Webcam:
     def fps(self) -> int:
         with self._data_lock:
             if self._webcam_fps is None:
-                raise ValueError('Webcam is not connected')
+                raise ValueError(f'webcam {self._index}: Webcam is not connected')
             return self._webcam_fps
     
     # -- STATE PROPERTIES --
@@ -158,11 +158,11 @@ class Webcam:
     # -- THREAD METHOD --
 
     def _poll(self) -> None:
-        logger.debug('thread started')
+        logger.debug(f'webcam {self._index}:thread started')
         try:
             webcam = cv2.VideoCapture(self._index)
             if not webcam.isOpened():
-                raise ValueError('Cannot connect to webcam')
+                raise ValueError(f'webcam {self._index}: Cannot connect to webcam')
         except Exception as e:
             with self._data_lock:
                 self._webcam_state = Webcam.ERROR
@@ -170,7 +170,7 @@ class Webcam:
             self._disconnect()
             return
 
-        logger.debug('connected to webcam')
+        logger.debug(f'webcam {self._index}: connected to webcam')
 
         with self._data_lock:
             self._webcam = webcam
@@ -180,7 +180,7 @@ class Webcam:
         with self._data_lock:
             immediate_disconnect = self._webcam_disconnect
         if immediate_disconnect:
-            logger.debug('connecting interupted')
+            logger.debug(f'webcam {self._index}: connecting interupted')
             self._disconnect()
             return
 
@@ -236,7 +236,7 @@ class Webcam:
             # print("cv2.CAP_PROP_CHANNEL))", self._webcam.get(cv2.CAP_PROP_CHANNEL))
             # print("cv2.CAP_PROP_AUTO_WB))", self._webcam.get(cv2.CAP_PROP_AUTO_WB))
             # print("cv2.CAP_PROP_WB_TEMPERATURE))", self._webcam.get(cv2.CAP_PROP_WB_TEMPERATURE))
-            logger.debug('finished connecting')
+            logger.debug(f'webcam {self._index}: finished connecting')
 
         while True:
             # Could maybe be done with a threading.event but this is fine for now
@@ -247,7 +247,7 @@ class Webcam:
             if not read:
                 continue # This will give faster responses than reading and not sending.
             if disconnect:
-                logger.debug('disconnect found in loop')
+                logger.debug(f'webcam {self._index}: disconnect found in loop')
                 # If we wanted to be really safe we would disconnect even when the window closed
                 # through an error
                 break
@@ -263,7 +263,7 @@ class Webcam:
             if not retval:
                 with self._data_lock:
                     self._webcam_state = Webcam.ERROR
-                logger.error(ValueError('Failed to Read Frame (camera most likely disconnected).'))
+                logger.error(ValueError(f'webcam {self._index}: Failed to Read Frame (camera most likely disconnected).'))
                 break
             frame = frame[:, :, ::-1] # Flip the BGR to RGB on thread
             self._frames.put(frame) 

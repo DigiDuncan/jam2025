@@ -244,13 +244,13 @@ class Webcam:
                 read = self._webcam_read
                 disconnect = self._webcam_disconnect
 
-            if not read:
-                continue # This will give faster responses than reading and not sending.
             if disconnect:
                 logger.debug(f'webcam {self._index}: disconnect found in loop')
                 # If we wanted to be really safe we would disconnect even when the window closed
                 # through an error
                 break
+            if not read:
+                continue # This will give faster responses than reading and not sending.
 
             try:
                 retval, frame = self._webcam.read()

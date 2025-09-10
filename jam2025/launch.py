@@ -1,3 +1,4 @@
+from jam2025.views.game_view import GameView
 from .core.settings import settings, write_settings
 from .core.navigation import navigation
 from .core.application import Window
@@ -11,6 +12,7 @@ def launch() -> None:
         "m_calibration": (MouseCalibrationView, False),
         "p_test": (PlayerTestView, False),
         "i_test1": (IntegrationTestView, False),
+        "game": (GameView, False),
         "select_webcam": (SelectWebcamView, False)
     })
 

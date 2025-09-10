@@ -2,6 +2,7 @@ from arcade import View as ArcadeView, Sprite, SpriteList, Rect, LRBT
 
 from jam2025.core.settings import settings
 from jam2025.core.webcam import SimpleAnimatedWebcamDisplay
+from jam2025.core.navigation import navigation
 
 from jam2025.lib.webcam import Webcam
 
@@ -66,11 +67,14 @@ class SelectWebcamView(ArcadeView):
         )
 
         if settings.connected_webcam is not None:
-            pass    
-
-        initial_id = settings.webcam_id
-        webcam = Webcam(initial_id)
-        webcam.connect(True)
+            webcam = settings.connected_webcam
+            if webcam.disconnected:
+                webcam.connect(True)
+            initial_id = -1 if webcam.index != 0 else 0
+        else:
+            initial_id = -1 if settings.webcam_id != 0 else 0
+            webcam = Webcam(settings.webcam_id, settings.webcam_dshow)
+            webcam.connect(True)
 
         self.connecting_webcam = webcam
         self.hovered_display = None
@@ -78,7 +82,7 @@ class SelectWebcamView(ArcadeView):
 
         self.webcams = []
         self.displays = []
-        self.query_index = 0
+        self.query_index = initial_id
         self.failed_queries = 0
 
     def _create_display(self, webcam: Webcam) -> SimpleAnimatedWebcamDisplay:
@@ -92,6 +96,7 @@ class SelectWebcamView(ArcadeView):
         for webcam in self.webcams:
             webcam.disconnect()
         self.webcams = []
+        self.displays = []
 
     def select_webcam(self, id: int):
         # TODO: select webcam
@@ -131,11 +136,17 @@ class SelectWebcamView(ArcadeView):
         if self.failed_queries >= SelectWebcamView.WEBCAM_FAIL_CAP:
             self.connecting_webcam = None
             return
+        
+        ids = set(webcam.index for webcam in self.webcams)
         self.query_index += 1
-        if self.query_index >= SelectWebcamView.WEBCAM_CAP:
+        while self.query_index in ids:
+            self.query_index += 1
+
+        if len(self.webcams) >= SelectWebcamView.WEBCAM_CAP:
             self.connecting_webcam = None
             return
-        self.connecting_webcam = Webcam(self.query_index)
+
+        self.connecting_webcam = Webcam(self.query_index, settings.webcam_dshow)
         self.connecting_webcam.connect(True)
 
 
@@ -154,14 +165,10 @@ class SelectWebcamView(ArcadeView):
         height = self.display_area.height / sizing[1]
         full_size = width, height
         size = width - padding, height - padding
-        sub_size = width - 2*padding, height - 2*padding
 
         for position, display in zip(positions, displays):
             display.target_position = self.display_area.uv_to_position(position)
-            if display is self.clicked_display:
-                display.update_max_size(sub_size)
-            else:
-                display.update_max_size(full_size if display is self.hovered_display else size)
+            display.update_max_size(full_size if display is self.hovered_display else size)
 
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
@@ -180,7 +187,13 @@ class SelectWebcamView(ArcadeView):
                 self._layout_displays()
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
-        pass
+        if not self.hovered_display:
+            return
+        webcam = self.hovered_display.webcam
+        size = webcam.size
+        settings.update_values(connected_webcam = webcam, webcam_id = webcam.index, webcam_width = size[0], webcam_height = size[1])
+        settings.connected_webcam = self.hovered_display.webcam
 
-    def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
-        pass
+        self.webcams.remove(webcam) # protect webcam from being disconnected
+
+        navigation.show_view('v_select')

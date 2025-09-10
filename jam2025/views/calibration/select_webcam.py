@@ -108,6 +108,7 @@ class SelectWebcamView(ArcadeView):
             return
 
         if self.query_index >= len(self.webcams):
+            print(self.query_index)
             webcam = Webcam(self.query_index)
             webcam.connect(True)
             self.webcams.append(webcam)

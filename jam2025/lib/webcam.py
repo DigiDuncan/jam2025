@@ -45,6 +45,9 @@ class Webcam:
                 return
             logger.debug('set disconnect')
             self._webcam_disconnect = True
+            if self._webcam_state == Webcam.ERROR:
+                self._disconnect()
+
         if block:
             logger.debug('started blocking')
             # Block the disconnect thread until the disconnect msg has been recieved.

@@ -29,8 +29,10 @@ class SelectWebcamView(ArcadeView):
         self.query_index: int
         self.failed_queries: int
 
+        self.connecting_webcam: Webcam | None
+
         self.webcams: list[Webcam]
-        self.displays: list[SimpleAnimatedWebcamDisplay | None]
+        self.displays: list[SimpleAnimatedWebcamDisplay]
         self.spritelist: SpriteList[Sprite]
 
         self.display_area: Rect
@@ -42,8 +44,10 @@ class SelectWebcamView(ArcadeView):
         webcam = Webcam(initial_id)
         webcam.connect(True)
 
-        self.webcams = [webcam]
-        self.displays = [None]
+        self.connecting_webcam = webcam
+
+        self.webcams = []
+        self.displays = []
         self.query_index = 0
         self.failed_queries = 0
 
@@ -76,50 +80,42 @@ class SelectWebcamView(ArcadeView):
         self._validate_webcams()
 
         for display in self.displays:
-            if display is not None:
-                display.update(delta_time)
+            display.update(delta_time)
 
     def _validate_webcams(self):
-        for idx, webcam in enumerate(self.webcams):
-            if webcam.failed:
-                webcam.disconnect()
-                self.failed_queries += 1
-                if idx == self.query_index:
-                    self.query_index += 1
-                continue
-
-            if not webcam.connected:
-                continue
-
-            # the query index is a connected webcam so move on
-            if idx == self.query_index:
-                self.query_index += 1
-            
-            # check to see if the display for the connected webcam exists.
-            display = self.displays[idx]
-            if display is None:
-                display = SimpleAnimatedWebcamDisplay(webcam)
-                self.displays[idx] = display
-                display.target_position = display.sprite.position = self.center
-                self.spritelist.append(display.sprite)
-                self._layout_displays()
-
-        if self.failed_queries >= SelectWebcamView.WEBCAM_FAIL_CAP:
+        if self.connecting_webcam is None:
             return
+        
+        state = self.connecting_webcam.state
+        if state == Webcam.ERROR or state == Webcam.DISCONNECTED:
+            # This webcam failed to connect
+            self.failed_queries += 1
+            self._setup_next_webcam()
+            return
+        
+        if state == Webcam.CONNECTED:
+            self.webcams.append(self.connecting_webcam)
+            display = SimpleAnimatedWebcamDisplay(self.connecting_webcam)
+            self.displays.append(display)
+            self.spritelist.append(display.sprite)
+            self._layout_displays()
+            self._setup_next_webcam()
 
-        if self.query_index >= len(self.webcams):
-            print(self.query_index)
-            webcam = Webcam(self.query_index)
-            webcam.connect(True)
-            self.webcams.append(webcam)
-            self.displays.append(None)
+    def _setup_next_webcam(self):
+        if self.failed_queries >= SelectWebcamView.WEBCAM_FAIL_CAP:
+            self.connecting_webcam = None
+            return
+        self.query_index += 1
+        self.connecting_webcam = Webcam(self.query_index)
+        self.connecting_webcam.connect(True)
+
 
     def _layout_displays(self):
-        active_displays = tuple(display for display in self.displays if display is not None)
+        displays = self.displays
         max_columns = SelectWebcamView.MAX_COLUMNS
         padding = SelectWebcamView.PADDING
 
-        count = len(active_displays)
+        count = len(displays)
         remainder = count % max_columns
 
         columns = min(max_columns, count)
@@ -130,7 +126,7 @@ class SelectWebcamView(ArcadeView):
         max_size = (max_width, max_height)
         dx, dy = max_width + padding, max_height + padding
         hx, hy = max_width * 0.5, max_height * 0.5
-        for idx, display in enumerate(active_displays[:-remainder]):
+        for idx, display in enumerate(displays[:-remainder]):
             row = idx // max_columns
             column = idx % max_columns
             x = self.display_area.left + column * dx + hx
@@ -143,7 +139,7 @@ class SelectWebcamView(ArcadeView):
 
         dx = self.display_area.width / remainder
         y = self.display_area.bottom + hy
-        for idx, display in enumerate(active_displays[-remainder:]):
+        for idx, display in enumerate(displays[-remainder:]):
             display.target_position = ((idx + 0.5) * dx, y)
             display.update_max_size(max_size)
     

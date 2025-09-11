@@ -1,13 +1,13 @@
-from jam2025.views.game_view import GameView
 from .core.settings import settings, write_settings
 from .core.navigation import navigation
 from .core.application import Window
 from jam2025.lib import logging
 
-from .views import MouseCalibrationView, PlayerTestView, IntegrationTestView, SelectWebcamView, ViewSelectView
+from .views import MouseCalibrationView, PlayerTestView, IntegrationTestView, LuxBlobTest, SelectWebcamView, ViewSelectView, GameView
 
 def launch() -> None:
     navigation.add_views({
+        "lux": (LuxBlobTest, False),
         "v_select": (ViewSelectView, False),
         "m_calibration": (MouseCalibrationView, False),
         "p_test": (PlayerTestView, False),

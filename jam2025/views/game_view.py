@@ -1,9 +1,10 @@
 from arcade import View, Vec2, LBWH
 import arcade
 
-from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet
+from jam2025.core.game.bullet import PATTERNS, BulletList, CycleBulletEmitter, RainbowBullet
 from jam2025.core.game.character import Character
 
+from jam2025.core.ui.bar import HealthBar
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music
 from jam2025.core.webcam import WebcamController
@@ -23,7 +24,8 @@ class GameView(View):
         self.character.debug = True
 
         self.bullet_list = BulletList()
-        self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
+        self.emitter = CycleBulletEmitter(self.window.center, self.bullet_list, RainbowBullet,
+                                          patterns = [PATTERNS["fourway"], PATTERNS["fourwayspin"], PATTERNS["fourwaystagger"], PATTERNS["chaos"]])
 
         self.emitter.set_pattern(PATTERNS["fourwayspin"])
 
@@ -36,6 +38,8 @@ class GameView(View):
         self.use_mouse = False
         self.mouse_pos = self.center
 
+        self.health_bar = HealthBar(self.window.rect.top_right - Vec2(10, 10))
+
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
             self.use_mouse = not self.use_mouse
@@ -43,15 +47,16 @@ class GameView(View):
         elif symbol == arcade.key.D:
             self.webcam.debug = not self.webcam.debug
             self.character.debug = not self.character.debug
+        elif symbol == arcade.key.NUM_MULTIPLY:
+            self.character.health = self.character.max_health
 
     def reset(self) -> None:
         self.player.seek(0.0)
         self.character.reset()
 
         self.bullet_list = BulletList()
-        self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
-
-        self.emitter.set_pattern(PATTERNS["fourwayspin"])
+        self.emitter = CycleBulletEmitter(self.window.center, self.bullet_list, RainbowBullet, cycle_time = 5,
+                                          patterns = [PATTERNS["fourway"], PATTERNS["fourwayspin"], PATTERNS["fourwaystagger"], PATTERNS["chaos"]])
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)
@@ -59,11 +64,13 @@ class GameView(View):
     def on_update(self, delta_time: float) -> bool | None:
         if self.webcam.webcam.connected:
             self.webcam.update(delta_time)
-            self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
+            self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor if self.webcam.mapped_cursor else (0, 0))) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         else:
             self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         self.bullet_list.update(delta_time, self.character)
         self.emitter.update(delta_time)
+
+        self.health_bar.percentage = (self.character.health / self.character.max_health)
 
         if self.character.health <= 0:
             self.reset()
@@ -77,3 +84,5 @@ class GameView(View):
         self.bullet_list.draw()
         self.emitter.draw()
         self.character.draw()
+
+        self.health_bar.draw()

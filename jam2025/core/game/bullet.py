@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import cycle
 import math
 from typing import Any
 from arcade import SpriteCircle, SpriteList, Vec2
@@ -66,10 +67,12 @@ class Bullet:
         ...
 
     def on_collide(self, character: Character) -> None:
-        character.health -= self.damage
-        self.live = False
-        self.on_death()
-        self.on_killed()
+        if not character.invincible:
+            character.health -= self.damage
+            character.iframes()
+            self.live = False
+            self.on_death()
+            self.on_killed()
 
     def on_spawn(self) -> None:
         ...
@@ -155,9 +158,26 @@ class BulletEmitter:
             angular_speed = 0 if not e.radius else (e.speed / (math.tau * e.radius))
             self.bullet_list.spawn_bullet(self.bullet_type, self.sprite.position,
                                           v, e.speed, angular_speed)
-
     def draw(self) -> None:
         self.sprite_list.draw()
+
+class CycleBulletEmitter(BulletEmitter):
+    def __init__(self, pos: tuple[float | int, float | int] | Vec2,
+                 bullet_list: BulletList, bullet_type: type[Bullet] = Bullet, cycle_time: Seconds = 10.0,
+                 patterns: list[BulletPattern] | None = None) -> None:
+        super().__init__(pos, bullet_list, bullet_type, starting_pattern = None if patterns is None else patterns[0])
+
+        self.cycle_time = cycle_time
+        self.pattern_cycle = cycle(patterns) if patterns else None
+        self.pattern_time = 0.0
+
+    def update(self, delta_time: Seconds) -> None:
+        self.pattern_time += delta_time
+        if self.pattern_time >= self.cycle_time and self.pattern_cycle:
+            self.pattern_time = 0.0
+            self.set_pattern(next(self.pattern_cycle))
+
+        super().update(delta_time)
 
 # TODO: bullet pos offset (rotate with emiiter direction?)
 @dataclass
@@ -201,7 +221,7 @@ PATTERNS: dict[str, BulletPattern] = {
                                           BulletEvent(0.4, 0, -1),
                                           BulletEvent(0.6, -1, 0)]),
     "chaos": BulletPattern(
-        math.pi, 
+        math.pi,
         [
             BulletEvent(0*math.pi/7,  math.cos(0*math.tau/7),  math.sin(0*math.tau/7)),
             BulletEvent(0*math.pi/7, -math.cos(0*math.tau/7), -math.sin(0*math.tau/7)),

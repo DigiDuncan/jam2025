@@ -1,9 +1,10 @@
-from arcade import View, Vec2, LBWH
+from arcade import Text, View, Vec2, LBWH
 import arcade
 
 from jam2025.core.game.bullet import PATTERNS, BulletList, CycleBulletEmitter, RainbowBullet
 from jam2025.core.game.character import Character
 
+from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.ui.bar import HealthBar
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music
@@ -39,6 +40,9 @@ class GameView(View):
         self.mouse_pos = self.center
 
         self.health_bar = HealthBar(self.window.rect.top_right - Vec2(10, 10))
+        self.score_tracker = ScoreTracker()
+
+        self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
@@ -49,6 +53,8 @@ class GameView(View):
             self.character.debug = not self.character.debug
         elif symbol == arcade.key.NUM_MULTIPLY:
             self.character.health = self.character.max_health
+        elif symbol == arcade.key.R:
+            self.reset()
 
     def reset(self) -> None:
         self.player.seek(0.0)
@@ -57,6 +63,8 @@ class GameView(View):
         self.bullet_list = BulletList()
         self.emitter = CycleBulletEmitter(self.window.center, self.bullet_list, RainbowBullet, cycle_time = 5,
                                           patterns = [PATTERNS["fourway"], PATTERNS["fourwayspin"], PATTERNS["fourwaystagger"], PATTERNS["chaos"]])
+
+        self.score_tracker.reset()
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)
@@ -71,6 +79,8 @@ class GameView(View):
         self.emitter.update(delta_time)
 
         self.health_bar.percentage = (self.character.health / self.character.max_health)
+        self.score_tracker.update(delta_time)
+        self.score_text.text = f"Score {self.score_tracker.score}"
 
         if self.character.health <= 0:
             self.reset()
@@ -86,3 +96,4 @@ class GameView(View):
         self.character.draw()
 
         self.health_bar.draw()
+        self.score_text.draw()

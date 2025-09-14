@@ -10,6 +10,7 @@ from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
 import arcade
 
+from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.settings import settings
 from jam2025.data.loading import load_sound
 from jam2025.core.game.character import Character
@@ -41,11 +42,16 @@ class Bullet:
     def position(self, pos: Point2) -> None:
         self.sprite.position = pos
 
-    def collide(self, character: Character) -> None:
+    @property
+    def vulnerable(self) -> bool:
+        """Override this for a different system of choosing vulnerablility; currently half-way through lifetime."""
+        return self._creation_time + self.live_time / 2 < GLOBAL_CLOCK.time
+
+    def collide(self, character: Character, score_tracker: ScoreTracker) -> None:
         if self.owner is character:
             return
         if point_in_circle(character.position, character.size, self.sprite.position) and self.live:
-            self.on_collide(character)
+            self.on_collide(character, score_tracker)
 
     def move(self, delta_time: float) -> None:
         """Override this for non-straight bullets."""
@@ -56,6 +62,7 @@ class Bullet:
 
     def update(self, delta_time: float) -> None:
         self.on_update(delta_time)
+        self.sprite.alpha = 128 if self.vulnerable else 255
         self.move(delta_time)
         if self._creation_time + self.live_time < GLOBAL_CLOCK.time:
             self.live = False
@@ -68,13 +75,17 @@ class Bullet:
     def on_update(self, delta_time: float) -> None:
         ...
 
-    def on_collide(self, character: Character) -> None:
+    def on_collide(self, character: Character, score_tracker: ScoreTracker) -> None:
         if not character.invincible:
-            character.health -= self.damage
-            character.iframes()
-            self.live = False
-            self.on_death()
-            self.on_killed()
+            if self.vulnerable:
+                self.live = False
+                score_tracker.get_kill()
+            else:
+                character.health -= self.damage
+                character.iframes()
+                self.live = False
+                self.on_death()
+                self.on_killed()
 
     def on_spawn(self) -> None:
         ...
@@ -114,10 +125,10 @@ class BulletList:
         self.bullets.append(new_bullet)
         self.sprite_list.append(new_bullet.sprite)
 
-    def update(self, delta_time: float, character: Character) -> None:
+    def update(self, delta_time: float, character: Character, score_tracker: ScoreTracker) -> None:
         for bullet in self.bullets:
             bullet.update(delta_time)
-            bullet.collide(character)
+            bullet.collide(character, score_tracker)
 
         for bullet in [b for b in self.bullets if not b.live]:
             self.bullets.remove(bullet)

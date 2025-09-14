@@ -39,6 +39,7 @@ class GameView(View):
 
         self.health_bar = HealthBar(self.window.rect.top_right - Vec2(10, 10))
         self.score_tracker = ScoreTracker()
+        self.score_tracker.kill_mult = 5
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
         self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal", 5, 5,
@@ -76,7 +77,7 @@ class GameView(View):
             self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor if self.webcam.mapped_cursor else (0, 0))) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         else:
             self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
-        self.bullet_list.update(delta_time, self.character)
+        self.bullet_list.update(delta_time, self.character, self.score_tracker)
         self.emitter.update(delta_time)
         self.emitter2.update(delta_time)
 

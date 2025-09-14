@@ -96,7 +96,7 @@ class TobyScriptTextbox(Textbox):
         self.hide = False
         self.paused = False
 
-    def _push_char(self, c: str):
+    def _push_char(self, c: str) -> None:
         self.document.insert_text(len(self.document.text), c, {
             "font_name": self.font,
             "font_size": self.text_size,

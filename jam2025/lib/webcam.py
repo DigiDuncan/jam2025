@@ -2,7 +2,7 @@ import cv2
 import queue
 import threading
 
-import numpy as np 
+import numpy as np
 
 from .logging import logger
 
@@ -47,7 +47,7 @@ class Webcam:
             logger.debug(f'webcam {self._index}: set disconnect')
             self._webcam_disconnect = True
             early_disconnect = self._webcam_state == Webcam.ERROR
-        
+
         if early_disconnect:
             self._disconnect()
 
@@ -108,7 +108,7 @@ class Webcam:
             return frame
         except queue.Empty:
             return None
-    
+
     # -- WEBCAM ATTRIBUTE PROPERTIES --
 
     @property
@@ -128,7 +128,7 @@ class Webcam:
             if self._webcam_fps is None:
                 raise ValueError(f'webcam {self._index}: Webcam is not connected')
             return self._webcam_fps
-    
+
     # -- STATE PROPERTIES --
 
     @property
@@ -264,13 +264,13 @@ class Webcam:
                     self._webcam_state = Webcam.ERROR
                 logger.error(e)
                 break
-            
+
             if not retval:
                 with self._data_lock:
                     self._webcam_state = Webcam.ERROR
                 logger.error(ValueError(f'webcam {self._index}: Failed to Read Frame (camera most likely disconnected).'))
                 break
             frame = frame[:, :, ::-1] # Flip the BGR to RGB on thread
-            self._frames.put(frame) 
+            self._frames.put(frame)
 
         self._disconnect()

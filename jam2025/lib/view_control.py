@@ -7,7 +7,7 @@ __all__ = (
 
 class Transition:
 
-    def __init__(self, views: dict[str, tuple[type[View], bool]] = None):
+    def __init__(self, views: dict[str, tuple[type[View], bool]] | None = None):
         views = views or {}
         self._views: dict[str, type] = {}
         self._persistent: dict[str, View | None] = {}

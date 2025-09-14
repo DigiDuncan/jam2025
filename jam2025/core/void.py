@@ -36,7 +36,7 @@ class Void:
     def __init__(self, region: arcade.Rect) -> None:
         """https://www.shadertoy.com/view/3XG3WK"""
         self.region = region
-        self.shadertoy = Shadertoy((region.width, region.height), Void.SHADER)
+        self.shadertoy = Shadertoy((int(region.width), int(region.height)), Void.SHADER)
         self.overlay_color: RGBA255 = (0, 0, 0, 255 - 32)
 
     def draw(self) -> None:

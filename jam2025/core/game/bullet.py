@@ -5,15 +5,17 @@ from itertools import cycle
 import math
 from typing import Any
 from arcade import SpriteCircle, SpriteList, Vec2
+from arcade.math import rotate_point
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
 import arcade
 
+from jam2025.core.settings import settings
 from jam2025.data.loading import load_sound
 from jam2025.core.game.character import Character
 from jam2025.lib import noa
 from jam2025.lib.typing import NEVER, Seconds
-from jam2025.lib.utils import point_in_circle
+from jam2025.lib.utils import draw_cross, point_in_circle
 
 class Bullet:
     def __init__(self, radius: float = 10, damage: float = 1, live_time: float = 10, owner: Any = None) -> None:
@@ -178,6 +180,27 @@ class CycleBulletEmitter(BulletEmitter):
             self.set_pattern(next(self.pattern_cycle))
 
         super().update(delta_time)
+
+class SpinningBulletEmitter(BulletEmitter):
+    def __init__(self, pos: tuple[float | int, float | int] | Vec2, bullet_list: BulletList,
+                 bullet_type: type[Bullet] = Bullet, starting_pattern: BulletPattern | None = None,
+                 spin_radius: float = 40.0, spin_speed: float = 1.0) -> None:
+        super().__init__(pos, bullet_list, bullet_type, starting_pattern)
+        self.anchor_pos = (self.sprite.position[0] + spin_radius, self.sprite.position[1])
+        self.original_pos = (self.sprite.position[0], self.sprite.position[1])
+        self.spin_speed = spin_speed
+
+    def update(self, delta_time: Seconds) -> None:
+        self.sprite.position = rotate_point(self.original_pos[0], self.original_pos[1], self.anchor_pos[0], self.anchor_pos[1], GLOBAL_CLOCK.time * self.spin_speed * 360)
+        super().update(delta_time)
+
+    def draw(self) -> None:
+        super().draw()
+        if settings.debug:
+            self.debug_draw()
+
+    def debug_draw(self) -> None:
+        draw_cross(Vec2(*self.anchor_pos), self.sprite.height, thickness = 3)
 
 # TODO: bullet pos offset (rotate with emiiter direction?)
 @dataclass

@@ -1,7 +1,7 @@
 from arcade import Text, View, Vec2, LBWH
 import arcade
 
-from jam2025.core.game.bullet import PATTERNS, BulletList, CycleBulletEmitter, RainbowBullet
+from jam2025.core.game.bullet import PATTERNS, BulletList, CycleBulletEmitter, RainbowBullet, SpinningBulletEmitter
 from jam2025.core.game.character import Character
 
 from jam2025.core.game.score_tracker import ScoreTracker
@@ -22,16 +22,14 @@ class GameView(View):
 
         self.character = Character()
         self.character.position = Vec2(0, 0)
-        self.character.debug = True
 
         self.bullet_list = BulletList()
-        self.emitter = CycleBulletEmitter(self.window.center, self.bullet_list, RainbowBullet,
+        self.emitter = CycleBulletEmitter((self.window.center_x - self.width / 4, self.window.center_y), self.bullet_list, RainbowBullet,
                                           patterns = [PATTERNS["fourway"], PATTERNS["fourwayspin"], PATTERNS["fourwaystagger"], PATTERNS["chaos"]])
 
-        self.emitter.set_pattern(PATTERNS["fourwayspin"])
+        self.emitter2 = SpinningBulletEmitter((self.window.center_x + self.width / 2.5, self.window.center_y), self.bullet_list, RainbowBullet, starting_pattern = PATTERNS["left"])
 
         self.webcam = WebcamController(settings.webcam_id, settings.webcam_name, region=self.window.rect, bounds=LBWH(0.9, 0.1, -0.8, 0.8))
-        self.webcam.debug = True
         self.webcam.sprite.size = self.size
         self.webcam.sprite.position = self.center
         self.webcam.sprite.alpha = 128
@@ -50,8 +48,7 @@ class GameView(View):
             self.use_mouse = not self.use_mouse
             self.window.set_mouse_visible(not self.use_mouse)
         elif symbol == arcade.key.D:
-            self.webcam.debug = not self.webcam.debug
-            self.character.debug = not self.character.debug
+            settings.debug = not settings.debug
         elif symbol == arcade.key.NUM_MULTIPLY:
             self.character.health = self.character.max_health
         elif symbol == arcade.key.R:
@@ -62,8 +59,9 @@ class GameView(View):
         self.character.reset()
 
         self.bullet_list = BulletList()
-        self.emitter = CycleBulletEmitter(self.window.center, self.bullet_list, RainbowBullet, cycle_time = 5,
+        self.emitter = CycleBulletEmitter((self.window.center_x - self.width / 4, self.window.center_y), self.bullet_list, RainbowBullet, cycle_time = 5,
                                           patterns = [PATTERNS["fourway"], PATTERNS["fourwayspin"], PATTERNS["fourwaystagger"], PATTERNS["chaos"]])
+        self.emitter2 = SpinningBulletEmitter((self.window.center_x + self.width / 2.5, self.window.center_y), self.bullet_list, RainbowBullet, starting_pattern = PATTERNS["left"])
 
         self.score_tracker.reset()
 
@@ -78,6 +76,7 @@ class GameView(View):
             self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         self.bullet_list.update(delta_time, self.character)
         self.emitter.update(delta_time)
+        self.emitter2.update(delta_time)
 
         self.health_bar.percentage = (self.character.health / self.character.max_health)
         self.score_tracker.update(delta_time)
@@ -94,6 +93,7 @@ class GameView(View):
 
         self.bullet_list.draw()
         self.emitter.draw()
+        self.emitter2.draw()
         self.character.draw()
 
         self.health_bar.draw()

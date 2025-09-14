@@ -129,7 +129,7 @@ class WebcamController:
 
         self.flip = False
         self.show_lightness = False
-        self.debug = False
+        self.force_debug = False
 
         self.animator = SecondOrderAnimatorKClamped(self._frequency, self._dampening, self._response, Vec2(0, 0), Vec2(0, 0), 0)  # type: ignore -- Animatable
 
@@ -353,5 +353,5 @@ class WebcamController:
 
     def draw(self) -> None:
         self.spritelist.draw()
-        if self.debug:
+        if settings.debug or self.force_debug:
             self.debug_draw()

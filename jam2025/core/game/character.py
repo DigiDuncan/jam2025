@@ -2,6 +2,7 @@ from arcade import Vec2
 import arcade
 
 from jam2025.core.game.lux import LuxRenderer
+from jam2025.core.settings import settings
 
 class Character:
     def __init__(self) -> None:
@@ -13,7 +14,6 @@ class Character:
 
         # self.renderer = PlayerRenderer()
         self.renderer = LuxRenderer()
-        self.debug = False
 
         self.invincibility_time = 1.0
         self._invicibility_timer = self.invincibility_time
@@ -48,7 +48,7 @@ class Character:
 
     def draw(self) -> None:
         self.renderer.draw()
-        if self.debug:
+        if settings.debug:
             self.debug_draw()
 
     def debug_draw(self) -> None:

@@ -1,4 +1,5 @@
-from arcade import Sprite, SpriteList, Vec2, Texture, get_window
+from arcade import Sprite, SpriteList, Text, Vec2, Texture, get_window
+from jam2025.core.settings import settings
 from jam2025.data.loading import load_texture
 
 
@@ -29,6 +30,8 @@ class Bar:
 
         self._percentage = 1.0
 
+        self.debug_text = Text(f"{self.percentage*100:.2f}%", self.middle_sprite.right - 5, self.middle_sprite.center_y, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "center", anchor_x = "right")
+
     @property
     def position(self) -> Vec2:
         return self._position
@@ -47,6 +50,7 @@ class Bar:
     @percentage.setter
     def percentage(self, v: float) -> None:
         self._percentage = v
+        self.debug_text.text = f"{self.percentage*100:.2f}%"
 
     def draw(self) -> None:
         self.middle_region = self.atlas.get_texture_region_info(self.middle_tex.atlas_name)
@@ -68,6 +72,9 @@ class Bar:
         self.middle_sprite.right = self.position.x + self.middle_tex.width / 2.0
 
         self.spritelist.draw()
+
+        if settings.debug:
+            self.debug_text.draw()
 
 
 class HealthBar(Bar):

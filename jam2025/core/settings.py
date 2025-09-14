@@ -63,6 +63,9 @@ class _Settings:
         self.music_volume: float
         self.ui_volume: float
 
+        # Debug
+        self.debug: bool
+
         self.update_values(**values)
 
     # -- SETTINGS OBSERVER CODE --
@@ -155,16 +158,17 @@ _MAPPING: dict[str, dict[str, SettingMapping]] = {
         "downsample": ("capture_downsample", 4),
         "count": ("capture_count", 30),
     },
+    "debug": {"debug": ("debug", False)}
 }
 
 def load_settings() -> _Settings:
     _cfg_path = Path('.cfg')
     if not _cfg_path.exists():
         return create_settings()
-    
+
     with open(_cfg_path, 'rb') as fp:
         toml = load(fp)
-    
+
     values: dict[str, Any] = {}
     for group, data in _MAPPING.items():
         for name, (attr, default) in data.items():

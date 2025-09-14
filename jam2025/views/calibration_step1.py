@@ -162,7 +162,7 @@ class MouseCalibrationView(View):
                 ease_quadinout(640.0, (self.webcam.sprite.width / 2) + 10, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time)),
                 ease_quadinout(440.0, self.center_y, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))
             )
-            self.webcam.debug = True
+            self.webcam.force_debug = True
 
             for slider, text in zip([self.threshold_slider, self.downsample_slider, self.polled_points_slider], [self.threshold_label, self.downsample_label, self.polled_points_label], strict = True):
                 x = ease_quadout(self.width, self.width - 550, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))

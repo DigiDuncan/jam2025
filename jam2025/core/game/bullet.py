@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from itertools import cycle
 import math
 from typing import Any
-from arcade import SpriteCircle, SpriteList, Vec2
+from arcade import Sprite, SpriteCircle, SpriteList, Texture, Vec2
 from arcade.math import rotate_point
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
@@ -141,6 +141,8 @@ class BulletList:
 
 class BulletEmitter:
     def __init__(self, pos: Point2, bullet_list: BulletList, bullet_type: type[Bullet] = Bullet, starting_pattern: BulletPattern | None = None) -> None:
+        # !!!: The webcam enabling seems to render this sprite invisible??
+        # self.sprite = Sprite(get_emitter_tex())
         self.sprite = SpriteCircle(10, arcade.color.GREEN)
         self.sprite.position = pos
         self.sprite_list = SpriteList()
@@ -152,6 +154,8 @@ class BulletEmitter:
         self.current_pattern_start_time: Seconds = GLOBAL_CLOCK.time
 
         self.direction = 0.0
+        self.vulnerable = False
+        self.live = True
 
         self.sound = load_sound('blast')
 
@@ -159,8 +163,15 @@ class BulletEmitter:
         self.current_pattern = new_pattern
         self.current_pattern_start_time = GLOBAL_CLOCK.time
 
+    def collide(self, character: Character, score_tracker: ScoreTracker) -> None:
+        if point_in_circle(character.position, character.size, self.sprite.position):
+            if not character.invincible:
+                if self.vulnerable:
+                    self.live = False
+                    score_tracker.get_kill()
+
     def update(self, delta_time: float) -> None:
-        if not self.current_pattern:
+        if not self.current_pattern or not self.live:
             return
         new_events = self.current_pattern.get_events(GLOBAL_CLOCK.time - self.current_pattern_start_time)
         if new_events:
@@ -172,7 +183,8 @@ class BulletEmitter:
             self.bullet_list.spawn_bullet(self.bullet_type, self.sprite.position,
                                           v, e.speed, angular_speed)
     def draw(self) -> None:
-        self.sprite_list.draw()
+        if self.live:
+            self.sprite_list.draw()
 
 class CycleBulletEmitter(BulletEmitter):
     def __init__(self, pos: tuple[float | int, float | int] | Vec2,
@@ -288,3 +300,17 @@ PATTERNS: dict[str, BulletPattern] = {
         ]
     )
 }
+
+emitter_tex: Texture | None = None
+
+def get_emitter_tex() -> Texture:
+    global emitter_tex
+    if emitter_tex:
+        return emitter_tex
+    emitter_tex = Texture.create_empty("_emitter", (20, 20))
+    default_atlas = arcade.get_window().ctx.default_atlas
+    default_atlas.add(emitter_tex)
+    with default_atlas.render_into(emitter_tex) as fbo:
+        fbo.clear()
+        draw_cross(Vec2(10, 10), 20, arcade.color.GREEN, 3)
+    return emitter_tex

@@ -56,6 +56,8 @@ class GameView(View):
             self.character.health = self.character.max_health
         elif symbol == arcade.key.R:
             self.reset()
+        elif symbol == arcade.key.S:
+            arcade.get_window().ctx.default_atlas.save("./atlas.png")
 
     def reset(self) -> None:
         self.player.seek(0.0)
@@ -78,8 +80,10 @@ class GameView(View):
         else:
             self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         self.bullet_list.update(delta_time, self.character, self.score_tracker)
-        self.emitter.update(delta_time)
-        self.emitter2.update(delta_time)
+
+        for be in [self.emitter, self.emitter2]:
+            be.update(delta_time)
+            be.collide(self.character, self.score_tracker)
 
         self.health_bar.percentage = (self.character.health / self.character.max_health)
         self.score_tracker.update(delta_time)
@@ -102,3 +106,4 @@ class GameView(View):
         self.health_bar.draw()
         self.score_text.draw()
         self.controls_text.draw()
+

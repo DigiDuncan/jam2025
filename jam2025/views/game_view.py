@@ -43,6 +43,7 @@ class GameView(View):
         self.score_tracker = ScoreTracker()
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal", 5, 5, font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom", multiline = True, width = self.width / 4)
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
@@ -97,3 +98,4 @@ class GameView(View):
 
         self.health_bar.draw()
         self.score_text.draw()
+        self.controls_text.draw()

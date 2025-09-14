@@ -42,7 +42,7 @@ class Bullet:
     def collide(self, character: Character) -> None:
         if self.owner is character:
             return
-        if point_in_circle(character.position, character.size / 2, self.sprite.position) and self.live:
+        if point_in_circle(character.position, character.size, self.sprite.position) and self.live:
             self.on_collide(character)
 
     def move(self, delta_time: float) -> None:

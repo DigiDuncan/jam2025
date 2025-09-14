@@ -4,7 +4,7 @@ from jam2025.data.loading import load_texture
 
 
 class Bar:
-    def __init__(self, position: Vec2, middle: str = None, *, back: str = None, front: str = None):
+    def __init__(self, position: Vec2, middle: str, *, back: str | None = None, front: str | None = None):
         self._position = position
         self.back_tex = load_texture(back) if back is not None else None
         self.middle_tex = load_texture(middle)
@@ -58,15 +58,15 @@ class Bar:
 
         self.crop_region.y = self.middle_region.y
         self.crop_region.height = self.middle_region.height
-        self.crop_region.width = self.percentage * self.middle_region.width
+        self.crop_region.width = int(self.percentage * self.middle_region.width)
         self.crop_region.x = self.middle_region.x + self.middle_region.width - self.crop_region.width
 
         ux, uy, uw, uh = self.crop_region.x / self.atlas.width, self.crop_region.y / self.atlas.height, self.crop_region.width / self.atlas.width, self.crop_region.height / self.atlas.height
         self.crop_region.texture_coordinates = (ux, uy, ux + uw, uy, ux, uy + uh, ux + uw, uy + uh)
 
         # ?: Is there a way to do this without accessing a private member? If not, we should PR that.
-        slot = self.atlas._texture_uvs.get_existing_or_free_slot(self.middle_tex_crop.atlas_name)
-        self.atlas._texture_uvs.set_slot_data(slot, self.crop_region.texture_coordinates)
+        slot = self.atlas._texture_uvs.get_existing_or_free_slot(self.middle_tex_crop.atlas_name)  # noqa: SLF001 # type: ignore -- wow this line sucks
+        self.atlas._texture_uvs.set_slot_data(slot, self.crop_region.texture_coordinates)  # noqa: SLF001 # type: ignore -- wow this line sucks
 
         self.middle_sprite.width = self.crop_region.width
         self.middle_sprite.right = self.position.x + self.middle_tex.width / 2.0

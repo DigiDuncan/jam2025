@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from copy import copy, deepcopy
 from dataclasses import dataclass
 from itertools import cycle
 import math
 from typing import Any
-from arcade import Sprite, SpriteCircle, SpriteList, Texture, Vec2
+from arcade import Sprite, SpriteCircle, SpriteList, Texture, TextureAnimationSprite, Vec2
 from arcade.math import rotate_point
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
@@ -18,10 +19,14 @@ from jam2025.lib import noa
 from jam2025.lib.typing import NEVER, Seconds
 from jam2025.lib.utils import draw_cross, point_in_circle
 
+bullet_sprite = load_spritesheet("energy_ball", 5, 6, 30, 30)
+
 class Bullet:
     def __init__(self, radius: float = 10, damage: float = 1, live_time: float = 10, owner: Any = None) -> None:
         # self.sprite = load_spritesheet("energy_ball", 5, 6, 30, 30)
-        self.sprite = SpriteCircle(10, arcade.color.RED)
+        self.sprite = TextureAnimationSprite()
+        self.sprite.textures = bullet_sprite.textures
+        self.sprite.animation = bullet_sprite.animation
         self.sprite.width = 20
         self.sprite.height = 20
         self.damage = damage
@@ -71,7 +76,6 @@ class Bullet:
             self.live = False
             self.on_death()
             self.on_timeout()
-        self.sprite.update_animation(delta_time)
 
     def draw(self) -> None:
         ...
@@ -137,6 +141,8 @@ class BulletList:
         for bullet in [b for b in self.bullets if not b.live]:
             self.bullets.remove(bullet)
             self.sprite_list.remove(bullet.sprite)
+
+        self.sprite_list.update_animation(delta_time)
 
     def draw(self) -> None:
         self.sprite_list.draw()

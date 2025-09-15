@@ -106,4 +106,3 @@ class GameView(View):
         self.health_bar.draw()
         self.score_text.draw()
         self.controls_text.draw()
-

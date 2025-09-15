@@ -12,7 +12,7 @@ import arcade
 
 from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.settings import settings
-from jam2025.data.loading import load_sound
+from jam2025.data.loading import load_sound, load_spritesheet
 from jam2025.core.game.character import Character
 from jam2025.lib import noa
 from jam2025.lib.typing import NEVER, Seconds
@@ -20,7 +20,10 @@ from jam2025.lib.utils import draw_cross, point_in_circle
 
 class Bullet:
     def __init__(self, radius: float = 10, damage: float = 1, live_time: float = 10, owner: Any = None) -> None:
-        self.sprite = SpriteCircle(radius, arcade.color.RED)  #type: ignore -- float -> int
+        # self.sprite = load_spritesheet("energy_ball", 5, 6, 30, 30)
+        self.sprite = SpriteCircle(10, arcade.color.RED)
+        self.sprite.width = 20
+        self.sprite.height = 20
         self.damage = damage
         self.live = True
         self.live_time = live_time
@@ -68,6 +71,7 @@ class Bullet:
             self.live = False
             self.on_death()
             self.on_timeout()
+        self.sprite.update_animation(delta_time)
 
     def draw(self) -> None:
         ...

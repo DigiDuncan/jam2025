@@ -63,3 +63,17 @@ def open_settings(name: str = "USB Video Device") -> None:
 
 def frame_data_to_image(data: np.ndarray) -> Image.Image:
     return Image.fromarray(data, mode = "RGB")
+
+def draw_cross(origin: arcade.Vec2, size: float, color: arcade.types.Color = arcade.color.WHITE, thickness: float = 1.0) -> None:
+    arcade.draw_line(
+            origin.x - size, origin.y - size,
+            origin.x + size, origin.y + size,
+            color,
+            thickness
+        )
+    arcade.draw_line(
+        origin.x + size, origin.y - size,
+        origin.x - size, origin.y + size,
+        color,
+        thickness
+    )

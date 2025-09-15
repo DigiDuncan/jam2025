@@ -27,7 +27,7 @@ class IntegrationTestView(View):
         self.emitter.set_pattern(PATTERNS["fourwayspin"])
 
         self.webcam = WebcamController(settings.webcam_id, settings.webcam_name, region=self.window.rect, bounds=LBWH(0.9, 0.1, -0.8, 0.8))
-        self.webcam.debug = True
+        self.webcam.force_debug = True
         self.webcam.sprite.size = self.size
         self.webcam.sprite.position = self.center
 

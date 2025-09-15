@@ -46,7 +46,7 @@ class Slider[RT]:
 
     @value.setter
     def value(self, val: RT) -> None:
-        p = perc(self.slider_min, self.slider_max, val)
+        p = perc(self.slider_min, self.slider_max, val)  # type: ignore -- no idea how to solve this one
         self.handle_rect = self.handle_rect.align_right(lerp(self._rect.left + self.handle_rect.width, self._rect.right, p))
 
     @property

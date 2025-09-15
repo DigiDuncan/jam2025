@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import cycle
 import math
 from typing import Any
-from arcade import SpriteCircle, SpriteList, Vec2
+from arcade import Sprite, SpriteCircle, SpriteList, Texture, Vec2
+from arcade.math import rotate_point
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
 import arcade
 
+from jam2025.core.game.score_tracker import ScoreTracker
+from jam2025.core.settings import settings
 from jam2025.data.loading import load_sound
 from jam2025.core.game.character import Character
 from jam2025.lib import noa
 from jam2025.lib.typing import NEVER, Seconds
-from jam2025.lib.utils import point_in_circle
+from jam2025.lib.utils import draw_cross, point_in_circle
 
 class Bullet:
     def __init__(self, radius: float = 10, damage: float = 1, live_time: float = 10, owner: Any = None) -> None:
@@ -38,11 +42,16 @@ class Bullet:
     def position(self, pos: Point2) -> None:
         self.sprite.position = pos
 
-    def collide(self, character: Character) -> None:
+    @property
+    def vulnerable(self) -> bool:
+        """Override this for a different system of choosing vulnerablility; currently half-way through lifetime."""
+        return self._creation_time + self.live_time / 2 < GLOBAL_CLOCK.time
+
+    def collide(self, character: Character, score_tracker: ScoreTracker) -> None:
         if self.owner is character:
             return
-        if point_in_circle(character.position, character.size / 2, self.sprite.position) and self.live:
-            self.on_collide(character)
+        if point_in_circle(character.position, character.size, self.sprite.position) and self.live:
+            self.on_collide(character, score_tracker)
 
     def move(self, delta_time: float) -> None:
         """Override this for non-straight bullets."""
@@ -53,6 +62,7 @@ class Bullet:
 
     def update(self, delta_time: float) -> None:
         self.on_update(delta_time)
+        self.sprite.alpha = 128 if self.vulnerable else 255
         self.move(delta_time)
         if self._creation_time + self.live_time < GLOBAL_CLOCK.time:
             self.live = False
@@ -65,11 +75,17 @@ class Bullet:
     def on_update(self, delta_time: float) -> None:
         ...
 
-    def on_collide(self, character: Character) -> None:
-        character.health -= self.damage
-        self.live = False
-        self.on_death()
-        self.on_killed()
+    def on_collide(self, character: Character, score_tracker: ScoreTracker) -> None:
+        if not character.invincible:
+            if self.vulnerable:
+                self.live = False
+                score_tracker.get_kill()
+            else:
+                character.health -= self.damage
+                character.iframes()
+                self.live = False
+                self.on_death()
+                self.on_killed()
 
     def on_spawn(self) -> None:
         ...
@@ -109,10 +125,10 @@ class BulletList:
         self.bullets.append(new_bullet)
         self.sprite_list.append(new_bullet.sprite)
 
-    def update(self, delta_time: float, character: Character) -> None:
+    def update(self, delta_time: float, character: Character, score_tracker: ScoreTracker) -> None:
         for bullet in self.bullets:
             bullet.update(delta_time)
-            bullet.collide(character)
+            bullet.collide(character, score_tracker)
 
         for bullet in [b for b in self.bullets if not b.live]:
             self.bullets.remove(bullet)
@@ -125,6 +141,8 @@ class BulletList:
 
 class BulletEmitter:
     def __init__(self, pos: Point2, bullet_list: BulletList, bullet_type: type[Bullet] = Bullet, starting_pattern: BulletPattern | None = None) -> None:
+        # !!!: The webcam enabling seems to render this sprite invisible??
+        # self.sprite = Sprite(get_emitter_tex())
         self.sprite = SpriteCircle(10, arcade.color.GREEN)
         self.sprite.position = pos
         self.sprite_list = SpriteList()
@@ -136,6 +154,8 @@ class BulletEmitter:
         self.current_pattern_start_time: Seconds = GLOBAL_CLOCK.time
 
         self.direction = 0.0
+        self.vulnerable = False
+        self.live = True
 
         self.sound = load_sound('blast')
 
@@ -143,8 +163,15 @@ class BulletEmitter:
         self.current_pattern = new_pattern
         self.current_pattern_start_time = GLOBAL_CLOCK.time
 
+    def collide(self, character: Character, score_tracker: ScoreTracker) -> None:
+        if point_in_circle(character.position, character.size, self.sprite.position):
+            if not character.invincible:
+                if self.vulnerable:
+                    self.live = False
+                    score_tracker.get_kill()
+
     def update(self, delta_time: float) -> None:
-        if not self.current_pattern:
+        if not self.current_pattern or not self.live:
             return
         new_events = self.current_pattern.get_events(GLOBAL_CLOCK.time - self.current_pattern_start_time)
         if new_events:
@@ -155,9 +182,48 @@ class BulletEmitter:
             angular_speed = 0 if not e.radius else (e.speed / (math.tau * e.radius))
             self.bullet_list.spawn_bullet(self.bullet_type, self.sprite.position,
                                           v, e.speed, angular_speed)
+    def draw(self) -> None:
+        if self.live:
+            self.sprite_list.draw()
+
+class CycleBulletEmitter(BulletEmitter):
+    def __init__(self, pos: tuple[float | int, float | int] | Vec2,
+                 bullet_list: BulletList, bullet_type: type[Bullet] = Bullet, cycle_time: Seconds = 10.0,
+                 patterns: list[BulletPattern] | None = None) -> None:
+        super().__init__(pos, bullet_list, bullet_type, starting_pattern = None if patterns is None else patterns[0])
+
+        self.cycle_time = cycle_time
+        self.pattern_cycle = cycle(patterns) if patterns else None
+        self.pattern_time = 0.0
+
+    def update(self, delta_time: Seconds) -> None:
+        self.pattern_time += delta_time
+        if self.pattern_time >= self.cycle_time and self.pattern_cycle:
+            self.pattern_time = 0.0
+            self.set_pattern(next(self.pattern_cycle))
+
+        super().update(delta_time)
+
+class SpinningBulletEmitter(BulletEmitter):
+    def __init__(self, pos: tuple[float | int, float | int] | Vec2, bullet_list: BulletList,
+                 bullet_type: type[Bullet] = Bullet, starting_pattern: BulletPattern | None = None,
+                 spin_radius: float = 40.0, spin_speed: float = 1.0) -> None:
+        super().__init__(pos, bullet_list, bullet_type, starting_pattern)
+        self.anchor_pos = (self.sprite.position[0] + spin_radius, self.sprite.position[1])
+        self.original_pos = (self.sprite.position[0], self.sprite.position[1])
+        self.spin_speed = spin_speed
+
+    def update(self, delta_time: Seconds) -> None:
+        self.sprite.position = rotate_point(self.original_pos[0], self.original_pos[1], self.anchor_pos[0], self.anchor_pos[1], GLOBAL_CLOCK.time * self.spin_speed * 360)
+        super().update(delta_time)
 
     def draw(self) -> None:
-        self.sprite_list.draw()
+        super().draw()
+        if settings.debug:
+            self.debug_draw()
+
+    def debug_draw(self) -> None:
+        draw_cross(Vec2(*self.anchor_pos), self.sprite.height, thickness = 3)
 
 # TODO: bullet pos offset (rotate with emiiter direction?)
 @dataclass
@@ -201,7 +267,7 @@ PATTERNS: dict[str, BulletPattern] = {
                                           BulletEvent(0.4, 0, -1),
                                           BulletEvent(0.6, -1, 0)]),
     "chaos": BulletPattern(
-        math.pi, 
+        math.pi,
         [
             BulletEvent(0*math.pi/7,  math.cos(0*math.tau/7),  math.sin(0*math.tau/7)),
             BulletEvent(0*math.pi/7, -math.cos(0*math.tau/7), -math.sin(0*math.tau/7)),
@@ -234,3 +300,17 @@ PATTERNS: dict[str, BulletPattern] = {
         ]
     )
 }
+
+emitter_tex: Texture | None = None
+
+def get_emitter_tex() -> Texture:
+    global emitter_tex
+    if emitter_tex:
+        return emitter_tex
+    emitter_tex = Texture.create_empty("_emitter", (20, 20))
+    default_atlas = arcade.get_window().ctx.default_atlas
+    default_atlas.add(emitter_tex)
+    with default_atlas.render_into(emitter_tex) as fbo:
+        fbo.clear()
+        draw_cross(Vec2(10, 10), 20, arcade.color.GREEN, 3)
+    return emitter_tex

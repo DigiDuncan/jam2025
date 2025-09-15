@@ -35,7 +35,7 @@ class _Settings:
         self.window_fullscreen: bool
         self.window_fps: int
         self.window_tps: int
-        
+
         self.initial_view: str
         self._platform: str = platform
 
@@ -52,7 +52,7 @@ class _Settings:
         self.webcam_flip: bool
         self.webcam_bounds: tuple[float, float, float, float]
         self.webcam_dshow: bool
-        
+
         self.capture_threshold: int
         self.capture_downsample: int
         self.capture_count: int
@@ -63,6 +63,9 @@ class _Settings:
         self.music_volume: float
         self.ui_volume: float
 
+        # Debug
+        self.debug: bool
+
         self.update_values(**values)
 
     # -- SETTINGS OBSERVER CODE --
@@ -71,12 +74,12 @@ class _Settings:
         object.__setattr__(self, name, value)
         if name.startswith('_'):
             return
-        
+
         for func, mask in self._refresh_functions.items():
             if mask is None or name in mask:
                 func()() # type: ignore -- because it's a weakref we have to deref it first
 
-    def update_values(self, **kwds: Any):
+    def update_values(self, **kwds: Any) -> None:
         for name, value in kwds.items():
             object.__setattr__(self, name, value)
         updated = set(kwds)
@@ -84,16 +87,16 @@ class _Settings:
             if mask is None or updated.intersection(updated):
                 func()() # type: ignore -- because it's a weakref we have to deref it first
 
-    def register_refresh_func(self, f: RefreshFunc, mask: Sequence[str] | None):
+    def register_refresh_func(self, f: RefreshFunc, mask: Sequence[str] | None) -> None:
         m = None if mask is None else set(mask)
         w = WeakMethod(f, self._clear_function)
         self._refresh_functions[w] = m
 
-    def _clear_function(self, w: WeakRefreshFunc):
+    def _clear_function(self, w: WeakRefreshFunc) -> None:
         self._refresh_functions.pop(w)
         logger.info(f'refresh function {w} automatically deregistered')
 
-    def deregister_refresh_func(self, f: RefreshFunc):
+    def deregister_refresh_func(self, f: RefreshFunc) -> None:
         w = WeakMethod(f)
         if w not in self._refresh_functions:
             return
@@ -102,24 +105,24 @@ class _Settings:
     # -- UTILITY PROPERTIES AND METHODS --
 
     @property
-    def platform(self):
+    def platform(self) -> str:
         return self._platform
-    
-    @property
-    def is_windows(self):
-        return self._platform == 'win32'
-    
-    @property
-    def has_webcam(self):
-        return self.connected_webcam is not None
-    
-    @property
-    def webcam_connected(self):
-        return self.connected_webcam is not None and self.connected_webcam.connected
-        
 
-type settingMapping = tuple[str, Any]
-_MAPPING: dict[str, dict[str, settingMapping]] = {
+    @property
+    def is_windows(self) -> bool:
+        return self._platform == 'win32'
+
+    @property
+    def has_webcam(self) -> bool:
+        return self.connected_webcam is not None
+
+    @property
+    def webcam_connected(self) -> bool:
+        return self.connected_webcam is not None and self.connected_webcam.connected
+
+
+type SettingMapping = tuple[str, Any]
+_MAPPING: dict[str, dict[str, SettingMapping]] = {
     "window": {
         "width": ("window_width", 1280),
         "height": ("window_height", 720),
@@ -155,16 +158,17 @@ _MAPPING: dict[str, dict[str, settingMapping]] = {
         "downsample": ("capture_downsample", 4),
         "count": ("capture_count", 30),
     },
+    "debug": {"debug": ("debug", False)}
 }
 
 def load_settings() -> _Settings:
     _cfg_path = Path('.cfg')
     if not _cfg_path.exists():
         return create_settings()
-    
+
     with open(_cfg_path, 'rb') as fp:
         toml = load(fp)
-    
+
     values: dict[str, Any] = {}
     for group, data in _MAPPING.items():
         for name, (attr, default) in data.items():
@@ -181,7 +185,7 @@ def create_settings() -> _Settings:
     return _Settings(values)
 
 
-def write_settings(settings: _Settings, dump_toml: bool = True):
+def write_settings(settings: _Settings, dump_toml: bool = True) -> dict:
     toml: dict[str, Any] = {}
     for group, data in _MAPPING.items():
         toml[group] = {}

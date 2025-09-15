@@ -4,5 +4,5 @@ jam2025/__pycache__/
 build/
 *.egg-info/
 *.pyc
-
+.vscode/
 atlas.png

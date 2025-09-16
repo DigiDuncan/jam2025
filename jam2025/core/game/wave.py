@@ -1,21 +1,16 @@
 from dataclasses import dataclass
-from typing import Protocol, Self
+from typing import Self
 from collections.abc import Callable, Sequence
-from arcade import Sprite, SpriteList
+from arcade import SpriteList
 from arcade.types import Point2
 from arcade.clock import GLOBAL_CLOCK
 
 from jam2025.core.game.character import Character
+from jam2025.core.game.enemy import Enemy
 from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.lib.anim import lerp, perc
 from jam2025.lib.typing import Seconds
-from .bullet import BulletEmitter, BulletList
-
-class Enemy(Protocol):
-    sprite: Sprite
-    position: Point2
-    emitter: BulletEmitter
-    live: bool
+from .bullet import BulletList
 
 @dataclass
 class Keyframe:
@@ -79,7 +74,7 @@ class WavePlayer:
 
     def start(self) -> None:
         self.playing = True
-        self.current_wave_start_time = GLOBAL_CLOCK.time
+        self.next_wave()
 
     def next_wave(self) -> None:
         if self._waves:
@@ -114,3 +109,4 @@ class WavePlayer:
     def draw(self) -> None:
         self.spritelist.draw()
         self.bullet_list.draw()
+

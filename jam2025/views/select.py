@@ -4,7 +4,7 @@ from pyglet.graphics import Batch
 from jam2025.core.navigation import navigation
 
 class ViewSelectView(ArcadeView):
-    
+
     def __init__(self) -> None:
         super().__init__()
         self._batch = Batch()

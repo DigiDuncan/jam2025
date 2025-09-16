@@ -1,3 +1,4 @@
+from jam2025.views.animation_test import AnimationTestView
 from .core.settings import settings, write_settings
 from .core.navigation import navigation
 from .core.application import Window
@@ -12,8 +13,9 @@ def launch() -> None:
         "m_calibration": (MouseCalibrationView, False),
         "p_test": (PlayerTestView, False),
         "i_test1": (IntegrationTestView, False),
-        "game": (GameView, False),
-        "select_webcam": (SelectWebcamView, False)
+        "select_webcam": (SelectWebcamView, False),
+        "animation_test": (AnimationTestView, False),
+        "game": (GameView, False)
     })
 
     logging.setup()

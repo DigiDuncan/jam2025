@@ -1,4 +1,4 @@
-from arcade import Text, View, Vec2, LBWH
+from arcade import Sprite, Text, View, Vec2, LBWH
 import arcade
 
 from jam2025.core.game.bullet import PATTERNS, BulletList, CycleBulletEmitter, RainbowBullet, SpinningBulletEmitter
@@ -7,10 +7,14 @@ from jam2025.core.game.character import Character
 from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.ui.bar import HealthBar
 from jam2025.core.void import Void
-from jam2025.data.loading import load_music
+from jam2025.data.loading import load_music, load_texture
 from jam2025.core.webcam import WebcamController
 
 from jam2025.core.settings import settings
+from jam2025.lib.anim import ease_linear, perc
+
+MAX_SPOTLIGHT_SCALE = 0.5
+MIN_SPOTLIGHT_SCALE = 0.25
 
 class GameView(View):
 
@@ -45,6 +49,9 @@ class GameView(View):
         self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
+
+        spotlight_texture = load_texture("spotlight")
+        self.spotlight = Sprite(spotlight_texture)
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
@@ -81,6 +88,9 @@ class GameView(View):
             self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         self.bullet_list.update(delta_time, self.character, self.score_tracker)
 
+        self.spotlight.position = self.character.position
+        self.spotlight.scale = ease_linear(MIN_SPOTLIGHT_SCALE, MAX_SPOTLIGHT_SCALE, self.health_bar.percentage)
+
         for be in [self.emitter, self.emitter2]:
             be.update(delta_time)
             be.collide(self.character, self.score_tracker)
@@ -102,6 +112,7 @@ class GameView(View):
         self.emitter.draw()
         self.emitter2.draw()
         self.character.draw()
+        arcade.draw_sprite(self.spotlight)
 
         self.health_bar.draw()
         self.score_text.draw()

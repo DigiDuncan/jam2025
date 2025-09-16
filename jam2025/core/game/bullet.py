@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from copy import copy, deepcopy
 from dataclasses import dataclass
 from itertools import cycle
 import math
 from typing import Any
-from arcade import Sprite, SpriteCircle, SpriteList, Texture, TextureAnimationSprite, Vec2
+from arcade import SpriteCircle, SpriteList, Texture, TextureAnimationSprite, Vec2
 from arcade.math import rotate_point
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2

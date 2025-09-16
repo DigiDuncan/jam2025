@@ -20,7 +20,7 @@ class Keyframe:
 type KeyframeList = Sequence[Keyframe]
 
 @dataclass
-class EnemyKeyframes:
+class MotionPath:
     enemy: Enemy
     keyframes: KeyframeList
 
@@ -50,7 +50,7 @@ class EnemyKeyframes:
 @dataclass
 class Wave:
     total_time: Seconds
-    enemy_keyframes: Sequence[EnemyKeyframes]
+    motion_paths: Sequence[MotionPath]
     skip_condition: Callable[[Self, Character, ScoreTracker], bool] = lambda x, y, z: False
 
 class WavePlayer:
@@ -65,8 +65,8 @@ class WavePlayer:
         self.spritelist = SpriteList()
 
         for w in self.waves:
-            for ek in w.enemy_keyframes:
-                ek.enemy.emitter.bullet_list = self.bullet_list
+            for mp in w.motion_paths:
+                mp.enemy.emitter.bullet_list = self.bullet_list
         self.playing = False
         self.strict = False
 
@@ -90,12 +90,15 @@ class WavePlayer:
         self.bullet_list.bullets.clear()
         self.spritelist.clear()
 
-        for ek in self.current_wave.enemy_keyframes:
-            self.spritelist.append(ek.enemy.sprite)
+        for mp in self.current_wave.motion_paths:
+            self.spritelist.append(mp.enemy.sprite)
 
     def reset(self) -> None:
         self.playing = False
         self._waves = self.waves.copy()
+        self.bullet_list.bullets.clear()
+        self.spritelist.clear()
+        self.score_tracker.reset()
 
     def update(self, delta_time: Seconds) -> None:
         if self.playing:
@@ -104,9 +107,9 @@ class WavePlayer:
                 self.next_wave()
 
         self.bullet_list.update(delta_time, self.character, self.score_tracker)
+        self.score_tracker.update(delta_time)
         self.spritelist.update(delta_time)
 
     def draw(self) -> None:
         self.spritelist.draw()
         self.bullet_list.draw()
-

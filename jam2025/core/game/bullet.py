@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from itertools import cycle
 import math
 from typing import Any
-from arcade import Sprite, SpriteCircle, SpriteList, Texture, TextureAnimationSprite, Vec2
+from arcade import Sprite, SpriteList, Texture, TextureAnimationSprite, Vec2
 from arcade.math import rotate_point
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
@@ -150,7 +150,6 @@ class BulletList:
 
 class BulletEmitter:
     def __init__(self, pos: Point2, bullet_list: BulletList, bullet_type: type[Bullet] = Bullet, starting_pattern: BulletPattern | None = None) -> None:
-        # !!!: The webcam enabling seems to render this sprite invisible??
         self.sprite = Sprite(get_emitter_tex())
         # self.sprite = SpriteCircle(10, arcade.color.GREEN)
         self.sprite.position = pos

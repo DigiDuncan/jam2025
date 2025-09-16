@@ -11,7 +11,7 @@ from jam2025.data.loading import load_music, load_texture
 from jam2025.core.webcam import WebcamController
 
 from jam2025.core.settings import settings
-from jam2025.lib.anim import ease_linear, perc
+from jam2025.lib.anim import ease_linear
 
 MAX_SPOTLIGHT_SCALE = 0.5
 MIN_SPOTLIGHT_SCALE = 0.25
@@ -46,12 +46,13 @@ class GameView(View):
         self.score_tracker.kill_mult = 5
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
-        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal", 5, 5,
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S] Show Spotlight", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
 
         spotlight_texture = load_texture("spotlight")
         self.spotlight = Sprite(spotlight_texture)
+        self.show_spotlight = True
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
@@ -64,6 +65,8 @@ class GameView(View):
         elif symbol == arcade.key.R:
             self.reset()
         elif symbol == arcade.key.S:
+            self.show_spotlight = not self.show_spotlight
+        elif symbol == arcade.key.A:
             arcade.get_window().ctx.default_atlas.save("./atlas.png")
 
     def reset(self) -> None:
@@ -112,7 +115,8 @@ class GameView(View):
         self.emitter.draw()
         self.emitter2.draw()
         self.character.draw()
-        arcade.draw_sprite(self.spotlight)
+        if self.show_spotlight:
+            arcade.draw_sprite(self.spotlight)
 
         self.health_bar.draw()
         self.score_text.draw()

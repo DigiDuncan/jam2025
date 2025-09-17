@@ -112,6 +112,7 @@ class WavePlayer:
 
             for mp in self.current_wave.motion_paths:
                 mp.update_position(GLOBAL_CLOCK.time)
+                mp.enemy.emitter.update(delta_time)
 
     def draw(self) -> None:
         self.spritelist.draw()

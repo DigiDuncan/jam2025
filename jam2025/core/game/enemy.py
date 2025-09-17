@@ -17,3 +17,4 @@ class Enemy:
     @position.setter
     def position(self, v: Point2) -> None:
         self.sprite.position = v
+        self.emitter.sprite.position = v

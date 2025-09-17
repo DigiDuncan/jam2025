@@ -13,8 +13,8 @@ from jam2025.core.webcam import WebcamController
 from jam2025.core.settings import settings
 from jam2025.lib.anim import ease_linear
 
-MAX_SPOTLIGHT_SCALE = 0.5
-MIN_SPOTLIGHT_SCALE = 0.25
+MAX_SPOTLIGHT_SCALE = 4
+MIN_SPOTLIGHT_SCALE = 2
 
 class GameView(View):
 

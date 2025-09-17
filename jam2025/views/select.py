@@ -10,6 +10,9 @@ class ViewSelectView(ArcadeView):
         self._batch = Batch()
         self._text = [Text(name, self.center_x, self.height - 36 * (idx + 1), font_size=20, anchor_x='center', anchor_y='center', batch=self._batch) for idx, name in enumerate(navigation.available_views)]
 
+    def setup(self) -> None:
+        ...
+
     def on_draw(self) -> bool | None:
         self.clear()
         self._batch.draw()

@@ -1,6 +1,8 @@
 from typing import Any
 from arcade import get_window, View
 
+from jam2025.core.ui.splashscreen import SplashView
+
 __all__ = (
     "Transition",
 )
@@ -30,7 +32,7 @@ class Transition:
         for name, (view, persistent) in views.items():
             self.add_view(name, view, persistent)
 
-    def show_view(self, name: str, *args: Any, **kwds: Any) -> None:
+    def show_view(self, name: str, *args: Any, show_splash: bool = True, **kwds: Any) -> None:
         if name not in self._views:
             raise KeyError(f"{name} is not a registered view")
 
@@ -42,5 +44,9 @@ class Transition:
             if view is None:
                 view = typ()
                 self._persistent[name] = view
-        get_window().show_view(view)
 
+        if show_splash:
+            splash_view = SplashView(view.__class__)
+            get_window().show_view(splash_view)
+        else:
+            get_window().show_view(view)

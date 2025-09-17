@@ -23,7 +23,7 @@ def launch() -> None:
     logging.setup()
 
     win = Window()
-    navigation.show_view(settings.initial_view)
+    navigation.show_view(settings.initial_view, show_splash = False)
     win.run()
 
     write_settings(settings)

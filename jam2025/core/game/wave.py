@@ -106,9 +106,12 @@ class WavePlayer:
                 self.current_wave.skip_condition(self.current_wave, self.character, self.score_tracker)):
                 self.next_wave()
 
-        self.bullet_list.update(delta_time, self.character, self.score_tracker)
-        self.score_tracker.update(delta_time)
-        self.spritelist.update(delta_time)
+            self.bullet_list.update(delta_time, self.character, self.score_tracker)
+            self.score_tracker.update(delta_time)
+            self.spritelist.update(delta_time)
+
+            for mp in self.current_wave.motion_paths:
+                mp.update_position(GLOBAL_CLOCK.time)
 
     def draw(self) -> None:
         self.spritelist.draw()

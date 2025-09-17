@@ -1,11 +1,14 @@
-from jam2025.views.animation_test import AnimationTestView
-from jam2025.views.wave_test import WaveTestView
 from .core.settings import settings, write_settings
 from .core.navigation import navigation
 from .core.application import Window
 from jam2025.lib import logging
 
-from .views import MouseCalibrationView, PlayerTestView, IntegrationTestView, LuxBlobTest, SelectWebcamView, ViewSelectView, GameView
+from .views import MouseCalibrationView, SelectWebcamView, ViewSelectView, GameView
+from jam2025.tests.animation_test import AnimationTestView
+from jam2025.tests.integration_test import IntegrationTestView
+from jam2025.tests.lux_blob_test import LuxBlobTest
+from jam2025.tests.player_test import PlayerTestView
+from jam2025.tests.wave_test import WaveTestView
 
 def launch() -> None:
     navigation.add_views({

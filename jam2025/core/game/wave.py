@@ -83,7 +83,7 @@ class WavePlayer:
         elif self.strict:
             raise RuntimeError("No more waves!")
         else:
-            self._waves = self.waves
+            self._waves = self.waves.copy()
             self.current_wave = self._waves.pop(0)
             self.current_wave_start_time = GLOBAL_CLOCK.time
 

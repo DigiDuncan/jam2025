@@ -74,6 +74,10 @@ class WaveTestView(View):
         self.player.seek(0.0)
         self.character.reset()
         self.wave_player.reset()
+        self.wave_player.start()
+
+    def on_show_view(self) -> None:
+        self.wave_player.start()
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)

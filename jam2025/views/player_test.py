@@ -3,6 +3,7 @@ from random import random
 from arcade import Vec2, View
 from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, Bullet, RainbowBullet
 from jam2025.core.game.character import Character
+from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music
 
@@ -15,6 +16,7 @@ class PlayerTestView(View):
         self.player = self.music.play(volume = 0.0, loop = True)
 
         self.character = Character()
+        self.score_tracker = ScoreTracker()
         self.mouse_pos = (0, 0)
 
         self.bullet_list = BulletList()
@@ -33,7 +35,7 @@ class PlayerTestView(View):
 
     def on_update(self, delta_time: float) -> None:
         self.character.update(delta_time, Vec2(*self.mouse_pos))
-        self.bullet_list.update(delta_time, self.character)
+        self.bullet_list.update(delta_time, self.character, self.score_tracker)
         self.emitter.update(delta_time)
 
         if self.character.health <= 0:

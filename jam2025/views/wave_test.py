@@ -1,7 +1,7 @@
 from arcade import SpriteCircle, Text, View, Vec2, LBWH
 import arcade
 
-from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet, SpinningBulletEmitter
+from jam2025.core.game.bullet import PATTERNS, BulletList, RainbowBullet, SpinningBulletEmitter
 from jam2025.core.game.character import Character
 from jam2025.core.game.enemy import Enemy
 from jam2025.core.game.score_tracker import ScoreTracker
@@ -30,7 +30,7 @@ class WaveTestView(View):
         self.score_tracker = ScoreTracker()
         self.score_tracker.kill_mult = 5
 
-        WAVES = [
+        WAVES = [  # noqa: N806
             Wave(10, [
                 MotionPath(Enemy(SpriteCircle(10, arcade.color.WHITE),
                                  SpinningBulletEmitter((640, 480),

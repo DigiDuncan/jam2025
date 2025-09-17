@@ -30,7 +30,7 @@ class SelectWebcamView(ArcadeView):
     The goal of this view is to let the player select which webcam to use.
 
     It defaults to loading the webcam found in the .cfg file. Which defaults to zero.
-    It then keeps trying to connect to webcams until one fails to connect. 
+    It then keeps trying to connect to webcams until one fails to connect.
 
     every connected webcam is displayed in an enumeration the player can select from.
     The default (the one found in the .cfg) is highlighted as the default. If the
@@ -60,10 +60,10 @@ class SelectWebcamView(ArcadeView):
         self.spritelist = SpriteList()
         padding = SelectWebcamView.PADDING
         self.display_area = LRBT(
-            padding*0.5,
-            self.width - padding*0.5,
-            padding*0.5,
-            self.height - padding*0.5
+            padding * 0.5,
+            self.width - padding * 0.5,
+            padding * 0.5,
+            self.height - padding * 0.5
         )
 
         if settings.connected_webcam is not None:
@@ -98,7 +98,7 @@ class SelectWebcamView(ArcadeView):
         self.webcams = []
         self.displays = []
 
-    def select_webcam(self, id: int):
+    def select_webcam(self, id: int) -> None:
         # TODO: select webcam
         pass
 
@@ -113,17 +113,17 @@ class SelectWebcamView(ArcadeView):
         for display in self.displays:
             display.update(delta_time)
 
-    def _validate_webcams(self):
+    def _validate_webcams(self) -> None:
         if self.connecting_webcam is None:
             return
-        
+
         state = self.connecting_webcam.state
         if state == Webcam.ERROR or state == Webcam.DISCONNECTED:
             # This webcam failed to connect
             self.failed_queries += 1
             self._setup_next_webcam()
             return
-        
+
         if state == Webcam.CONNECTED:
             self.webcams.append(self.connecting_webcam)
             display = SimpleAnimatedWebcamDisplay(self.connecting_webcam)
@@ -132,11 +132,11 @@ class SelectWebcamView(ArcadeView):
             self._layout_displays()
             self._setup_next_webcam()
 
-    def _setup_next_webcam(self):
+    def _setup_next_webcam(self) -> None:
         if self.failed_queries >= SelectWebcamView.WEBCAM_FAIL_CAP:
             self.connecting_webcam = None
             return
-        
+
         ids = set(webcam.index for webcam in self.webcams)
         self.query_index += 1
         while self.query_index in ids:
@@ -149,8 +149,7 @@ class SelectWebcamView(ArcadeView):
         self.connecting_webcam = Webcam(self.query_index, settings.webcam_dshow)
         self.connecting_webcam.connect(True)
 
-
-    def _layout_displays(self):
+    def _layout_displays(self) -> None:
         padding = SelectWebcamView.PADDING
         displays = self.displays
         count = len(displays)
@@ -166,10 +165,9 @@ class SelectWebcamView(ArcadeView):
         full_size = width, height
         size = width - padding, height - padding
 
-        for position, display in zip(positions, displays):
+        for position, display in zip(positions, displays, strict = True):
             display.target_position = self.display_area.uv_to_position(position)
             display.update_max_size(full_size if display is self.hovered_display else size)
-
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         p = (x, y)

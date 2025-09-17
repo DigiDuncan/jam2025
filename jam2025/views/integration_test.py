@@ -3,6 +3,7 @@ from arcade import View, Vec2, LBWH
 from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet
 from jam2025.core.game.character import Character
 
+from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music
 from jam2025.core.webcam import WebcamController
@@ -20,6 +21,7 @@ class IntegrationTestView(View):
         self.player = self.music.play(volume = 0.05, loop = True)
 
         self.character = Character()
+        self.score_tracker = ScoreTracker()
 
         self.bullet_list = BulletList()
         self.emitter = BulletEmitter(self.window.center, self.bullet_list, RainbowBullet)
@@ -43,10 +45,10 @@ class IntegrationTestView(View):
     def on_update(self, delta_time: float) -> bool | None:
         if self.webcam.webcam.connected:
             self.webcam.update(delta_time)
-            self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor))
+            self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor if self.webcam.mapped_cursor else self.center))
         else:
             self.character.update(delta_time, Vec2(*self.center))
-        self.bullet_list.update(delta_time, self.character)
+        self.bullet_list.update(delta_time, self.character, self.score_tracker)
         self.emitter.update(delta_time)
 
         if self.character.health <= 0:

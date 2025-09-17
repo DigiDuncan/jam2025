@@ -9,12 +9,12 @@ from .calibration.select_webcam import SelectWebcamView
 from .game_view import GameView
 
 __all__ = (
+    "GameView",
+    "IntegrationTestView",
+    "LuxBlobTest",
     "MouseCalibrationView",
     "PlayerTestView",
-    "IntegrationTestView",
-    "ViewSelectView",
-    "LuxBlobTest",
     "SelectWebcamView",
-    "GameView"
+    "ViewSelectView"
 )
 

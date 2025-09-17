@@ -1,5 +1,6 @@
 from arcade import SpriteCircle, Text, View, Vec2, LBWH
 import arcade
+from arcade.experimental.bloom_filter import BloomFilter
 
 from jam2025.core.game.bullet import PATTERNS, BulletList, RainbowBullet, SpinningBulletEmitter
 from jam2025.core.game.character import Character
@@ -55,9 +56,13 @@ class WaveTestView(View):
         self.mouse_pos = self.center
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
-        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal", 5, 5,
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[B] Bloom", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
+
+        self.bloom_on = False
+        self.bloom = 5.0
+        self.bloom_filter = BloomFilter(int(self.width), int(self.height), self.bloom)
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
@@ -69,6 +74,8 @@ class WaveTestView(View):
             self.character.health = self.character.max_health
         elif symbol == arcade.key.R:
             self.reset()
+        elif symbol == arcade.key.B:
+            self.bloom_on = not self.bloom_on
 
     def reset(self) -> None:
         self.player.seek(0.0)
@@ -103,7 +110,15 @@ class WaveTestView(View):
         if self.webcam.webcam.connected:
             self.webcam.draw()
 
-        self.wave_player.draw()
+        if self.bloom_on:
+            # !: A small issue: the previous layers do not draw if bloom is on.
+            self.bloom_filter.clear()
+            self.bloom_filter.use()
+            self.wave_player.draw()
+            self.window.use()
+            self.bloom_filter.draw()
+        else:
+            self.wave_player.draw()
 
         self.health_bar.draw()
         self.score_text.draw()

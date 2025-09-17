@@ -1,5 +1,6 @@
 from arcade import Sprite, Text, View, Vec2, LBWH
 import arcade
+from arcade.experimental.bloom_filter import BloomFilter
 
 from jam2025.core.game.bullet import PATTERNS, BulletList, CycleBulletEmitter, RainbowBullet, SpinningBulletEmitter
 from jam2025.core.game.character import Character
@@ -46,13 +47,17 @@ class GameView(View):
         self.score_tracker.kill_mult = 5
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
-        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S] Show Spotlight", 5, 5,
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S] Show Spotlight\n[B] Bloom", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
 
         spotlight_texture = load_texture("spotlight")
         self.spotlight = Sprite(spotlight_texture)
         self.show_spotlight = True
+
+        self.bloom_on = True
+        self.bloom = 5.0
+        self.bloom_filter = BloomFilter(int(self.width), int(self.height), self.bloom)
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
@@ -68,6 +73,8 @@ class GameView(View):
             self.show_spotlight = not self.show_spotlight
         elif symbol == arcade.key.A:
             arcade.get_window().ctx.default_atlas.save("./atlas.png")
+        elif symbol == arcade.key.B:
+            self.bloom_on = not self.bloom_on
 
     def reset(self) -> None:
         self.player.seek(0.0)
@@ -105,16 +112,28 @@ class GameView(View):
         if self.character.health <= 0:
             self.reset()
 
+    def draw_game(self) -> None:
+        self.bullet_list.draw()
+        self.emitter.draw()
+        self.emitter2.draw()
+        self.character.draw()
+
     def on_draw(self) -> bool | None:
         self.clear()
         self.void.draw()
         if self.webcam.webcam.connected:
             self.webcam.draw()
 
-        self.bullet_list.draw()
-        self.emitter.draw()
-        self.emitter2.draw()
-        self.character.draw()
+        if self.bloom_on:
+            # !: A small issue: the previous layers do not draw if bloom is on.
+            self.bloom_filter.clear()
+            self.bloom_filter.use()
+            self.draw_game()
+            self.window.use()
+            self.bloom_filter.draw()
+        else:
+            self.draw_game()
+
         if self.show_spotlight:
             arcade.draw_sprite(self.spotlight)
 

@@ -80,3 +80,7 @@ class Bar:
 class HealthBar(Bar):
     def __init__(self, position: Vec2):
         super().__init__(position, "health", front = "bar")
+
+class WaveBar(Bar):
+    def __init__(self, position: Vec2):
+        super().__init__(position, "wave", front = "big_bar")

@@ -1,5 +1,6 @@
 from arcade import SpriteCircle, Text, View, Vec2, LBWH
 import arcade
+from arcade.clock import GLOBAL_CLOCK
 from arcade.experimental.bloom_filter import BloomFilter
 
 from jam2025.core.game.bullet import PATTERNS, BulletList, RainbowBullet, SpinningBulletEmitter
@@ -7,12 +8,13 @@ from jam2025.core.game.character import Character
 from jam2025.core.game.enemy import Enemy
 from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.game.wave import Keyframe, MotionPath, Wave, WavePlayer
-from jam2025.core.ui.bar import HealthBar
+from jam2025.core.ui.bar import HealthBar, WaveBar
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music
 from jam2025.core.webcam import WebcamController
 
 from jam2025.core.settings import settings
+from jam2025.lib.anim import perc
 
 dummy_bullet_list = BulletList()
 
@@ -28,6 +30,8 @@ class WaveTestView(View):
         self.character.position = Vec2(0, 0)
 
         self.health_bar = HealthBar(self.window.rect.top_right - Vec2(10, 10))
+        self.wave_bar = WaveBar(Vec2(0, 0))
+        self.wave_bar.position = self.window.rect.top_center + Vec2(self.wave_bar.middle_sprite.width / 2, -10)
         self.score_tracker = ScoreTracker()
         self.score_tracker.kill_mult = 5
 
@@ -97,6 +101,7 @@ class WaveTestView(View):
             self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
 
         self.wave_player.update(delta_time)
+        self.wave_bar.percentage = perc(self.wave_player.current_wave_start_time, self.wave_player.current_wave_start_time + self.wave_player.current_wave.total_time, GLOBAL_CLOCK.time)
 
         self.health_bar.percentage = (self.character.health / self.character.max_health)
         self.score_text.text = f"Score: {self.score_tracker.score}"
@@ -123,3 +128,4 @@ class WaveTestView(View):
         self.health_bar.draw()
         self.score_text.draw()
         self.controls_text.draw()
+        self.wave_bar.draw()

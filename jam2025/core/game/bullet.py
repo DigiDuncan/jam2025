@@ -132,6 +132,10 @@ class BulletList:
         self.bullets.append(new_bullet)
         self.sprite_list.append(new_bullet.sprite)
 
+    def reset(self) -> None:
+        self.bullets.clear()
+        self.sprite_list.clear()
+
     def update(self, delta_time: float, character: Character, score_tracker: ScoreTracker) -> None:
         for bullet in self.bullets:
             bullet.update(delta_time)

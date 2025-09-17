@@ -87,7 +87,7 @@ class WavePlayer:
             self.current_wave = self._waves.pop(0)
             self.current_wave_start_time = GLOBAL_CLOCK.time
 
-        self.bullet_list.bullets.clear()
+        self.bullet_list.reset()
         self.spritelist.clear()
 
         for mp in self.current_wave.motion_paths:
@@ -96,7 +96,7 @@ class WavePlayer:
     def reset(self) -> None:
         self.playing = False
         self._waves = self.waves.copy()
-        self.bullet_list.bullets.clear()
+        self.bullet_list.reset()
         self.spritelist.clear()
         self.score_tracker.reset()
 
@@ -117,3 +117,6 @@ class WavePlayer:
     def draw(self) -> None:
         self.spritelist.draw()
         self.bullet_list.draw()
+        self.character.draw()
+        for mp in self.current_wave.motion_paths:
+            mp.enemy.emitter.sprite_list.draw()

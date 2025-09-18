@@ -2,6 +2,7 @@ from typing import NamedTuple
 from collections.abc import Generator
 from math import sin, pi
 from arcade import Sprite, View
+from arcade.clock import GLOBAL_CLOCK
 import arcade
 from jam2025.data.loading import load_texture
 
@@ -35,6 +36,8 @@ class SplashView(View):
         self._current_splash: Splash | None = None
         self._splashes: Generator[Splash] = (splash for splash in SPLASHES)
 
+        self.start = GLOBAL_CLOCK.time
+
     def setup(self) -> None:
         pass
 
@@ -64,12 +67,14 @@ class SplashView(View):
         self._next_splash()
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
-        self._current_splash = None
-        self.leave()
+        if GLOBAL_CLOCK.time > self.start + 0.5:
+            self._current_splash = None
+            self.leave()
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
-        self._current_splash = None
-        self.leave()
+        if GLOBAL_CLOCK.time > self.start + 0.5:
+            self._current_splash = None
+            self.leave()
 
     def on_update(self, delta_time: float) -> None:
         if self._current_splash is None:

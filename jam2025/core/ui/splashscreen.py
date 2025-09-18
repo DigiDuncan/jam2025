@@ -67,6 +67,10 @@ class SplashView(View):
         self._current_splash = None
         self.leave()
 
+    def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
+        self._current_splash = None
+        self.leave()
+
     def on_update(self, delta_time: float) -> None:
         if self._current_splash is None:
             return

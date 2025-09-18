@@ -58,6 +58,8 @@ class WavePlayer:
         self.waves = waves
         self._waves = self.waves.copy()
 
+        self.wave_count = 0
+
         self.character = character
         self.score_tracker = score_tracker
 
@@ -86,6 +88,8 @@ class WavePlayer:
             self.current_wave_start_time = GLOBAL_CLOCK.time
 
         self.spritelist.clear()
+        self.wave_count += 1
+        self.score_tracker.wave = self.wave_count
 
         for mp in self.current_wave.motion_paths:
             self.spritelist.append(mp.enemy.sprite)
@@ -96,6 +100,8 @@ class WavePlayer:
         self.bullet_list.reset()
         self.spritelist.clear()
         self.score_tracker.reset()
+        self.wave_count = 0
+        self.score_tracker.wave = 0
 
     def update(self, delta_time: Seconds) -> None:
         if self.playing:

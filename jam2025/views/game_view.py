@@ -34,6 +34,8 @@ class GameView(View):
         self.health_bar = HealthBar(self.window.rect.top_right - Vec2(10, 10))
         self.wave_bar = WaveBar(Vec2(0, 0))
         self.wave_bar.position = self.window.rect.top_center + Vec2(self.wave_bar.middle_sprite.width / 2, -10)
+        self.wave_text = Text("0", self.wave_bar.middle_sprite.center_x, self.wave_bar.middle_sprite.center_y, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "center", anchor_x = "center", align = "center")
+
         self.score_tracker = ScoreTracker()
         self.score_tracker.kill_mult = 5
 
@@ -167,6 +169,7 @@ class GameView(View):
         self.health_bar.percentage = (self.character.health / self.character.max_health)
         self.score_text.text = f"Score: {self.score_tracker.score}"
         self.finalscore_text.text = f"SCORE: {self.score_tracker.score}"
+        self.wave_text.text = f"{self.wave_player.wave_count}"
 
         self.spotlight.position = self.character.position
         self.spotlight.scale = ease_linear(MIN_SPOTLIGHT_SCALE, MAX_SPOTLIGHT_SCALE, self.health_bar.percentage)
@@ -198,6 +201,7 @@ class GameView(View):
         self.score_text.draw()
         self.controls_text.draw()
         self.wave_bar.draw()
+        self.wave_text.draw()
 
         if self.game_over:
             arcade.draw_rect_filled(self.window.rect, arcade.color.BURGUNDY)

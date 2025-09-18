@@ -87,7 +87,6 @@ class WavePlayer:
             self.current_wave = self._waves.pop(0)
             self.current_wave_start_time = GLOBAL_CLOCK.time
 
-        self.bullet_list.reset()
         self.spritelist.clear()
 
         for mp in self.current_wave.motion_paths:
@@ -111,7 +110,7 @@ class WavePlayer:
             self.spritelist.update(delta_time)
 
             for mp in self.current_wave.motion_paths:
-                mp.update_position(GLOBAL_CLOCK.time)
+                mp.update_position(GLOBAL_CLOCK.time - self.current_wave_start_time)
                 mp.enemy.emitter.update(delta_time)
 
     def draw(self) -> None:

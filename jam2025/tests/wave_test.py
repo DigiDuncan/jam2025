@@ -1,22 +1,24 @@
-from arcade import SpriteCircle, Text, View, Vec2, LBWH
+from arcade import Sprite, SpriteCircle, Text, View, Vec2, LBWH
 import arcade
 from arcade.clock import GLOBAL_CLOCK
 from arcade.experimental.bloom_filter import BloomFilter
 
-from jam2025.core.game.bullet import PATTERNS, BulletList, RainbowBullet, SpinningBulletEmitter
+from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet
 from jam2025.core.game.character import Character
 from jam2025.core.game.enemy import Enemy
 from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.game.wave import Keyframe, MotionPath, Wave, WavePlayer
 from jam2025.core.ui.bar import HealthBar, WaveBar
 from jam2025.core.void import Void
-from jam2025.data.loading import load_music
+from jam2025.data.loading import load_music, load_texture
 from jam2025.core.webcam import WebcamController
 
 from jam2025.core.settings import settings
-from jam2025.lib.anim import perc
+from jam2025.lib.anim import ease_linear, perc
 
 dummy_bullet_list = BulletList()
+MAX_SPOTLIGHT_SCALE = 4
+MIN_SPOTLIGHT_SCALE = 2
 
 class WaveTestView(View):
 
@@ -38,14 +40,15 @@ class WaveTestView(View):
         WAVES = [  # noqa: N806
             Wave(10, [
                 MotionPath(Enemy(SpriteCircle(10, arcade.color.WHITE),
-                                 SpinningBulletEmitter((640, 480),
+                                 BulletEmitter((640, 480),
                                                        dummy_bullet_list,
                                                        RainbowBullet,
                                                        PATTERNS["fourway"])),
                         [Keyframe(0, (1280 * 0.25, 720 * 0.25)),
-                        Keyframe(2, (1280 * 0.75, 720 * 0.25)),
-                        Keyframe(4, (1280 * 0.75, 720 * 0.75)),
-                        Keyframe(6, (1280 * 0.25, 720 * 0.75))])
+                        Keyframe(2.5, (1280 * 0.75, 720 * 0.25)),
+                        Keyframe(5, (1280 * 0.75, 720 * 0.75)),
+                        Keyframe(7.5, (1280 * 0.25, 720 * 0.75)),
+                        Keyframe(10, (1280 * 0.25, 720 * 0.25))])
             ])
         ]
 
@@ -60,9 +63,13 @@ class WaveTestView(View):
         self.mouse_pos = self.center
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
-        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[B] Bloom", 5, 5,
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S]Spotlight\n[B] Bloom", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
+
+        spotlight_texture = load_texture("spotlight")
+        self.spotlight = Sprite(spotlight_texture)
+        self.show_spotlight = True
 
         self.bloom_on = False
         self.bloom = 5.0
@@ -78,6 +85,10 @@ class WaveTestView(View):
             self.character.health = self.character.max_health
         elif symbol == arcade.key.R:
             self.reset()
+        elif symbol == arcade.key.S:
+            self.show_spotlight = not self.show_spotlight
+        elif symbol == arcade.key.A:
+            arcade.get_window().ctx.default_atlas.save("./atlas.png")
         elif symbol == arcade.key.B:
             self.bloom_on = not self.bloom_on
 
@@ -106,6 +117,9 @@ class WaveTestView(View):
         self.health_bar.percentage = (self.character.health / self.character.max_health)
         self.score_text.text = f"Score: {self.score_tracker.score}"
 
+        self.spotlight.position = self.character.position
+        self.spotlight.scale = ease_linear(MIN_SPOTLIGHT_SCALE, MAX_SPOTLIGHT_SCALE, self.health_bar.percentage)
+
         if self.character.health <= 0:
             self.reset()
 
@@ -124,6 +138,9 @@ class WaveTestView(View):
             self.bloom_filter.draw()
         else:
             self.wave_player.draw()
+
+        if self.show_spotlight:
+            arcade.draw_sprite(self.spotlight)
 
         self.health_bar.draw()
         self.score_text.draw()

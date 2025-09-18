@@ -21,7 +21,8 @@ SPLASHES: tuple[Splash, ...] = (
     Splash("splashes/digital_dragons", 0.75, 2.0, False),
     Splash("splashes/dragons_bakery", 1.0, 2.0, False),
     Splash("splashes/digiduncan", 0.25, 2.0, False),
-    Splash("splashes/made_with_arcade", 1.0, 2.0, False)
+    Splash("splashes/made_with_arcade", 1.0, 2.0, False),
+    Splash("splashes/lux_militia", 1.0, 4.0, False)
 )
 
 

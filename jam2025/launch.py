@@ -8,7 +8,6 @@ from jam2025.tests.animation_test import AnimationTestView
 from jam2025.tests.integration_test import IntegrationTestView
 from jam2025.tests.lux_blob_test import LuxBlobTest
 from jam2025.tests.player_test import PlayerTestView
-from jam2025.tests.wave_test import WaveTestView
 
 def launch() -> None:
     navigation.add_views({
@@ -19,7 +18,6 @@ def launch() -> None:
         "i_test1": (IntegrationTestView, False),
         "select_webcam": (SelectWebcamView, False),
         "animation_test": (AnimationTestView, False),
-        "wave_test": (WaveTestView, False),
         "game": (GameView, False)
     })
 

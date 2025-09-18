@@ -1,26 +1,23 @@
-from arcade import Sprite, SpriteCircle, Text, View, Vec2, LBWH
+from arcade import Sprite, Text, View, Vec2, LBWH
 import arcade
-from arcade.clock import GLOBAL_CLOCK
 from arcade.experimental.bloom_filter import BloomFilter
 
-from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet
+from jam2025.core.game.bullet import PATTERNS, BulletList, CycleBulletEmitter, RainbowBullet, SpinningBulletEmitter
 from jam2025.core.game.character import Character
-from jam2025.core.game.enemy import Enemy
+
 from jam2025.core.game.score_tracker import ScoreTracker
-from jam2025.core.game.wave import Keyframe, MotionPath, Wave, WavePlayer
-from jam2025.core.ui.bar import HealthBar, WaveBar
+from jam2025.core.ui.bar import HealthBar
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music, load_texture
 from jam2025.core.webcam import WebcamController
 
 from jam2025.core.settings import settings
-from jam2025.lib.anim import ease_linear, perc
+from jam2025.lib.anim import ease_linear
 
-dummy_bullet_list = BulletList()
 MAX_SPOTLIGHT_SCALE = 4
 MIN_SPOTLIGHT_SCALE = 2
 
-class WaveTestView(View):
+class GameView(View):
 
     def __init__(self) -> None:
         View.__init__(self)
@@ -31,28 +28,11 @@ class WaveTestView(View):
         self.character = Character()
         self.character.position = Vec2(0, 0)
 
-        self.health_bar = HealthBar(self.window.rect.top_right - Vec2(10, 10))
-        self.wave_bar = WaveBar(Vec2(0, 0))
-        self.wave_bar.position = self.window.rect.top_center + Vec2(self.wave_bar.middle_sprite.width / 2, -10)
-        self.score_tracker = ScoreTracker()
-        self.score_tracker.kill_mult = 5
+        self.bullet_list = BulletList()
+        self.emitter = CycleBulletEmitter((self.window.center_x - self.width / 4, self.window.center_y), self.bullet_list, RainbowBullet,
+                                          patterns = [PATTERNS["fourway"], PATTERNS["fourwayspin"], PATTERNS["fourwaystagger"], PATTERNS["chaos"]])
 
-        WAVES = [  # noqa: N806
-            Wave(10, [
-                MotionPath(Enemy(SpriteCircle(10, arcade.color.WHITE),
-                                 BulletEmitter((640, 480),
-                                                       dummy_bullet_list,
-                                                       RainbowBullet,
-                                                       PATTERNS["fourway"])),
-                        [Keyframe(0, (1280 * 0.25, 720 * 0.25)),
-                        Keyframe(2.5, (1280 * 0.75, 720 * 0.25)),
-                        Keyframe(5, (1280 * 0.75, 720 * 0.75)),
-                        Keyframe(7.5, (1280 * 0.25, 720 * 0.75)),
-                        Keyframe(10, (1280 * 0.25, 720 * 0.25))])
-            ])
-        ]
-
-        self.wave_player = WavePlayer(WAVES, self.character, self.score_tracker)
+        self.emitter2 = SpinningBulletEmitter((self.window.center_x + self.width / 2.5, self.window.center_y), self.bullet_list, RainbowBullet, starting_pattern = PATTERNS["left"])
 
         self.webcam = WebcamController(settings.webcam_id, settings.webcam_name, region=self.window.rect, bounds=LBWH(0.9, 0.1, -0.8, 0.8))
         self.webcam.sprite.size = self.size
@@ -62,8 +42,12 @@ class WaveTestView(View):
         self.use_mouse = False
         self.mouse_pos = self.center
 
+        self.health_bar = HealthBar(self.window.rect.top_right - Vec2(10, 10))
+        self.score_tracker = ScoreTracker()
+        self.score_tracker.kill_mult = 5
+
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
-        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S]Spotlight\n[B] Bloom", 5, 5,
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S] Show Spotlight\n[B] Bloom", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
 
@@ -71,7 +55,7 @@ class WaveTestView(View):
         self.spotlight = Sprite(spotlight_texture)
         self.show_spotlight = True
 
-        self.bloom_on = False
+        self.bloom_on = True
         self.bloom = 5.0
         self.bloom_filter = BloomFilter(int(self.width), int(self.height), self.bloom)
 
@@ -95,11 +79,13 @@ class WaveTestView(View):
     def reset(self) -> None:
         self.player.seek(0.0)
         self.character.reset()
-        self.wave_player.reset()
-        self.wave_player.start()
 
-    def on_show_view(self) -> None:
-        self.wave_player.start()
+        self.bullet_list = BulletList()
+        self.emitter = CycleBulletEmitter((self.window.center_x - self.width / 4, self.window.center_y), self.bullet_list, RainbowBullet, cycle_time = 5,
+                                          patterns = [PATTERNS["fourway"], PATTERNS["fourwayspin"], PATTERNS["fourwaystagger"], PATTERNS["chaos"]])
+        self.emitter2 = SpinningBulletEmitter((self.window.center_x + self.width / 2.5, self.window.center_y), self.bullet_list, RainbowBullet, starting_pattern = PATTERNS["left"])
+
+        self.score_tracker.reset()
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)
@@ -110,18 +96,27 @@ class WaveTestView(View):
             self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor if self.webcam.mapped_cursor else (0, 0))) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         else:
             self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
-
-        self.wave_player.update(delta_time)
-        self.wave_bar.percentage = perc(self.wave_player.current_wave_start_time, self.wave_player.current_wave_start_time + self.wave_player.current_wave.total_time, GLOBAL_CLOCK.time)
-
-        self.health_bar.percentage = (self.character.health / self.character.max_health)
-        self.score_text.text = f"Score: {self.score_tracker.score}"
+        self.bullet_list.update(delta_time, self.character, self.score_tracker)
 
         self.spotlight.position = self.character.position
         self.spotlight.scale = ease_linear(MIN_SPOTLIGHT_SCALE, MAX_SPOTLIGHT_SCALE, self.health_bar.percentage)
 
+        for be in [self.emitter, self.emitter2]:
+            be.update(delta_time)
+            be.collide(self.character, self.score_tracker)
+
+        self.health_bar.percentage = (self.character.health / self.character.max_health)
+        self.score_tracker.update(delta_time)
+        self.score_text.text = f"Score: {self.score_tracker.score}"
+
         if self.character.health <= 0:
             self.reset()
+
+    def draw_game(self) -> None:
+        self.bullet_list.draw()
+        self.emitter.draw()
+        self.emitter2.draw()
+        self.character.draw()
 
     def on_draw(self) -> bool | None:
         self.clear()
@@ -133,11 +128,11 @@ class WaveTestView(View):
             # !: A small issue: the previous layers do not draw if bloom is on.
             self.bloom_filter.clear()
             self.bloom_filter.use()
-            self.wave_player.draw()
+            self.draw_game()
             self.window.use()
             self.bloom_filter.draw()
         else:
-            self.wave_player.draw()
+            self.draw_game()
 
         if self.show_spotlight:
             arcade.draw_sprite(self.spotlight)
@@ -145,4 +140,3 @@ class WaveTestView(View):
         self.health_bar.draw()
         self.score_text.draw()
         self.controls_text.draw()
-        self.wave_bar.draw()

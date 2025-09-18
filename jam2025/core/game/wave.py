@@ -70,8 +70,6 @@ class WavePlayer:
         self.playing = False
         self.strict = False
 
-        self.next_wave()
-
     def start(self) -> None:
         self.playing = True
         self.next_wave()

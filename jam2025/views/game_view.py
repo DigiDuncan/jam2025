@@ -109,6 +109,11 @@ class GameView(View):
         self.bloom = 5.0
         self.bloom_filter = BloomFilter(int(self.width), int(self.height), self.bloom)
 
+        self.game_over = False
+
+        self.gameover_text = Text("GAME OVER", self.center_x, self.center_y, font_size = 88, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "center", anchor_x = "center", align = "center")
+        self.finalscore_text = Text("SCORE: X", self.center_x, self.gameover_text.bottom - 5, font_size = 44, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "center", align = "center")
+
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
             self.use_mouse = not self.use_mouse
@@ -126,11 +131,16 @@ class GameView(View):
         elif symbol == arcade.key.B:
             self.bloom_on = not self.bloom_on
 
+        if self.game_over:
+            self.reset()
+
     def reset(self) -> None:
         self.player.seek(0.0)
         self.character.reset()
         self.wave_player.reset()
         self.wave_player.start()
+        self.game_over = False
+        self.player.play()
 
     def on_show_view(self) -> None:
         self.wave_player.start()
@@ -138,7 +148,13 @@ class GameView(View):
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)
 
+    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
+        if self.game_over:
+            self.reset()
+
     def on_update(self, delta_time: float) -> bool | None:
+        if self.game_over:
+            return
         if self.webcam.webcam.connected:
             self.webcam.update(delta_time)
             self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor if self.webcam.mapped_cursor else (0, 0))) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
@@ -150,12 +166,14 @@ class GameView(View):
 
         self.health_bar.percentage = (self.character.health / self.character.max_health)
         self.score_text.text = f"Score: {self.score_tracker.score}"
+        self.finalscore_text.text = f"SCORE: {self.score_tracker.score}"
 
         self.spotlight.position = self.character.position
         self.spotlight.scale = ease_linear(MIN_SPOTLIGHT_SCALE, MAX_SPOTLIGHT_SCALE, self.health_bar.percentage)
 
         if self.character.health <= 0:
-            self.reset()
+            self.player.pause()
+            self.game_over = True
 
     def on_draw(self) -> bool | None:
         self.clear()
@@ -180,3 +198,8 @@ class GameView(View):
         self.score_text.draw()
         self.controls_text.draw()
         self.wave_bar.draw()
+
+        if self.game_over:
+            arcade.draw_rect_filled(self.window.rect, arcade.color.BURGUNDY)
+            self.gameover_text.draw()
+            self.finalscore_text.draw()

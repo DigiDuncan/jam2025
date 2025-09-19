@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from itertools import cycle
 import math
 from typing import Any
-from arcade import Sprite, SpriteCircle, SpriteList, Texture, TextureAnimationSprite, Vec2
+from arcade import SpriteCircle, SpriteList, Texture, TextureAnimationSprite, Vec2
 from arcade.math import rotate_point
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
@@ -18,7 +18,7 @@ from jam2025.lib import noa
 from jam2025.lib.typing import NEVER, Seconds
 from jam2025.lib.utils import draw_cross, point_in_circle
 
-bullet_sprite = load_spritesheet("energy_ball", 1, 30, 30, 30)
+bullet_sprite = load_spritesheet("bullet", 1, 30, 30, 30)
 
 class Bullet:
     def __init__(self, radius: float = 10, damage: float = 1, live_time: float = 10, owner: Any = None) -> None:

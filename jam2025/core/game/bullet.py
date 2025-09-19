@@ -5,7 +5,7 @@ from itertools import cycle
 import math
 from typing import Any
 from arcade import SpriteCircle, SpriteList, Texture, TextureAnimationSprite, Vec2
-from arcade.math import rotate_point
+from arcade.math import rotate_point, rand_in_circle
 from arcade.clock import GLOBAL_CLOCK
 from arcade.types import Point2
 import arcade
@@ -237,6 +237,25 @@ class SpinningBulletEmitter(BulletEmitter):
 
     def debug_draw(self) -> None:
         draw_cross(Vec2(*self.anchor_pos), self.sprite.height, thickness = 3)
+
+class RandomizedBulletEmitter(BulletEmitter):
+    def __init__(self, pos: Point2, spread: float, bullet_list: BulletList, bullet_type: type[Bullet] = Bullet, starting_pattern: BulletPattern | None = None) -> None:
+        super().__init__(pos, bullet_list, bullet_type, starting_pattern)
+        self.spread = spread
+
+    def update(self, delta_time: float) -> None:
+        if not self.current_pattern or not self.live:
+            return
+        new_events = self.current_pattern.get_events(GLOBAL_CLOCK.time - self.current_pattern_start_time)
+        if new_events:
+            self.sound.play(0.3)
+        for e in new_events:
+            v = Vec2(e.direction_x, e.direction_y).normalize()
+            v = v.rotate(self.direction)
+            angular_speed = 0 if not e.radius else (e.speed / (math.tau * e.radius))
+            bpos = rand_in_circle(self.sprite.position, self.spread)
+            self.bullet_list.spawn_bullet(self.bullet_type, bpos,
+                                          v, e.speed, angular_speed)
 
 # TODO: bullet pos offset (rotate with emiiter direction?)
 @dataclass

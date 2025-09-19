@@ -54,7 +54,7 @@ class BossEnemy(Enemy):
         self.sprite = TextureAnimationSprite()
         self.sprite.textures = bullet_sprite.textures
         self.sprite.animation = bullet_sprite.animation
-        self.size: float = 10
+        self.size: float = 128
         self.sprite.width = self.size
         self.sprite.height = self.size
         self.velocity: Vec2 = Vec2()

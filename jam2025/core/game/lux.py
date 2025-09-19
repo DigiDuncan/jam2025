@@ -26,9 +26,9 @@ NORMAL_TEST = 0.0001
 import numpy as np
 
 class BubblePoint:
-    def __init__(self, angle: float, locus: Vec2):
+    def __init__(self, angle: float, locus: Vec2, radius: float = 1):
         self.original_dir = Vec2.from_polar(angle, 1.0)
-        self.original_offset = self.original_dir * RADIUS
+        self.original_offset = self.original_dir * radius
         pos = locus + self.original_offset
 
         self.animator = ProceduralAnimator(

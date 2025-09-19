@@ -27,10 +27,10 @@ class MotionPath:
     def update_position(self, time: Seconds) -> None:
         if time <= self.keyframes[0].time:
             # We're before keyframe 1
-            self.enemy.position = self.keyframes[0].position
+            self.enemy.position = Vec2(*self.keyframes[0].position)
         elif time >= self.keyframes[-1].time:
             # We're after the last keyframe
-            self.enemy.position = self.keyframes[-1].position
+            self.enemy.position = Vec2(*self.keyframes[-1].position)
         else:
             # Get the index we're within:
             current_keyframe = Keyframe(0, (0, 0))
@@ -118,7 +118,7 @@ class WavePlayer:
                 mp.update_position(GLOBAL_CLOCK.time - self.current_wave_start_time)
                 mp.enemy.emitter.update(delta_time)
                 if hasattr(mp.enemy, "sprite_list"):
-                    mp.enemy.sprite_list.update_animation(delta_time)
+                    mp.enemy.sprite_list.update_animation(delta_time) # type: ignore -- I literally just hasattred this
 
     def draw(self) -> None:
         self.spritelist.draw()

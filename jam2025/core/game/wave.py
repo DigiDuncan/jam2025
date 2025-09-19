@@ -53,6 +53,9 @@ class Wave:
     motion_paths: Sequence[MotionPath]
     skip_condition: Callable[[Self, Character, ScoreTracker], bool] = lambda x, y, z: False
 
+class BossWave(Wave):
+    ...
+
 class WavePlayer:
     def __init__(self, waves: list[Wave], character: Character, score_tracker: ScoreTracker) -> None:
         self.waves = waves
@@ -114,6 +117,8 @@ class WavePlayer:
             for mp in self.current_wave.motion_paths:
                 mp.update_position(GLOBAL_CLOCK.time - self.current_wave_start_time)
                 mp.enemy.emitter.update(delta_time)
+                if hasattr(mp.enemy, "sprite_list"):
+                    mp.enemy.sprite_list.update_animation(delta_time)
 
     def draw(self) -> None:
         self.spritelist.draw()

@@ -115,6 +115,10 @@ class RainbowBullet(Bullet):
         self.__class__.COLOR_IDX += 1
         self.__class__.COLOR_IDX %= 12
 
+class BossBullet(Bullet):
+    def __init__(self, radius: Seconds = 20, damage: Seconds = 1, live_time: Seconds = 10, owner: Any = None) -> None:
+        super().__init__(radius, damage, live_time, owner)
+
 class BulletList:
     def __init__(self, bullets: list[Bullet] | None = None) -> None:
         self.bullets = bullets if bullets else []
@@ -290,6 +294,10 @@ PATTERNS: dict[str, BulletPattern] = {
     "bottom": BulletPattern(0.5, [BulletEvent(0, 0, -1)]),
     "left": BulletPattern(0.5, [BulletEvent(0, -1, 0)]),
     "fourway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0)]),
+    "eightway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0),
+                                    BulletEvent(0, 1, 1), BulletEvent(0, -1, 1), BulletEvent(0, 1, -1), BulletEvent(0, -1, -1)]),
+    "eightwayfast": BulletPattern(0.33, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0),
+                                    BulletEvent(0, 1, 1), BulletEvent(0, -1, 1), BulletEvent(0, 1, -1), BulletEvent(0, -1, -1)]),
     "fourwayspin": BulletPattern(0.5, [BulletEvent(0, 1, 0, radius = 200),
                                        BulletEvent(0, 0, 1, radius = 200),
                                        BulletEvent(0, 0, -1, radius = 200),

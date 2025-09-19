@@ -3,11 +3,11 @@ import arcade
 from arcade.clock import GLOBAL_CLOCK
 from arcade.experimental.bloom_filter import BloomFilter
 
-from jam2025.core.game.bullet import PATTERNS, BulletEmitter, BulletList, RainbowBullet
+from jam2025.core.game.bullet import PATTERNS, BossBullet, BulletEmitter, BulletList, RainbowBullet, RandomizedBulletEmitter
 from jam2025.core.game.character import Character
-from jam2025.core.game.enemy import Enemy
+from jam2025.core.game.enemy import BossEnemy, Enemy
 from jam2025.core.game.score_tracker import ScoreTracker
-from jam2025.core.game.wave import Keyframe, MotionPath, Wave, WavePlayer
+from jam2025.core.game.wave import BossWave, Keyframe, MotionPath, Wave, WavePlayer
 from jam2025.core.ui.bar import HealthBar, WaveBar
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music, load_texture
@@ -85,7 +85,11 @@ class GameView(View):
                          Keyframe(8, (self.width * 0.9, self.height * 0.1)),
                          Keyframe(9, (self.width * 0.9, self.height * 0.9)),
                          Keyframe(10, (self.width * 0.9, self.height * 0.1))])
-            ])
+            ]),
+            BossWave(600, [MotionPath(BossEnemy(
+                RandomizedBulletEmitter(self.window.center, 64, dummy_bullet_list, BossBullet, PATTERNS["eightwayfast"])),
+                [Keyframe(0, self.window.center)])],
+                lambda w, c, s: s.kills_per_wave[s.wave] >= 25)
         ]
 
         self.wave_player = WavePlayer(WAVES, self.character, self.score_tracker)

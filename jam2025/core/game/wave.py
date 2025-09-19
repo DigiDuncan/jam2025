@@ -91,9 +91,6 @@ class WavePlayer:
         self.wave_count += 1
         self.score_tracker.wave = self.wave_count
 
-        for mp in self.current_wave.motion_paths:
-            self.spritelist.append(mp.enemy.sprite)
-
     def reset(self) -> None:
         self.playing = False
         self._waves = self.waves.copy()
@@ -123,3 +120,4 @@ class WavePlayer:
         self.character.draw()
         for mp in self.current_wave.motion_paths:
             mp.enemy.emitter.sprite_list.draw()
+            mp.enemy.draw()

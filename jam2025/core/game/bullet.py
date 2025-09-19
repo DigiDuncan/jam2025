@@ -156,7 +156,7 @@ class BulletEmitter:
     def __init__(self, pos: Point2, bullet_list: BulletList, bullet_type: type[Bullet] = Bullet, starting_pattern: BulletPattern | None = None) -> None:
         # !: This isn't working?
         # self.sprite = Sprite(get_emitter_tex())
-        self.sprite = SpriteCircle(10, arcade.color.GREEN)
+        self.sprite = SpriteCircle(10, arcade.color.TRANSPARENT_BLACK)
         self.sprite.position = pos
         self.sprite_list = SpriteList()
         self.sprite_list.append(self.sprite)

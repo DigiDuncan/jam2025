@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import arcade
 import arcade.gl as gl
-from arcade.types import Point2, RGBOrA255
+from arcade.types import Point2, RGBOrA255, Color
 from pyglet.graphics import Batch
 from pyglet.shapes import Triangle
 from jam2025.lib.procedural_animator import ProceduralAnimator, SecondOrderAnimator
@@ -12,7 +12,6 @@ from logging import getLogger
 logger = getLogger("jam2025")
 
 OFFSET = 6.0
-RADIUS = 16.0
 
 LOCUS_COUNT = 2
 LOCUS_POS_FREQ = 3.0
@@ -129,13 +128,13 @@ void main(){
 }
 """
 
-    def __init__(self) -> None:
+    def __init__(self, color: RGBOrA255 = (255, 255, 255, 255), radius: float = 16.0) -> None:
         self.position: Vec2 = Vec2()
         self.velocity: Vec2 = Vec2()
 
         self._directions: np.typing.NDArray[np.float64] = np.asarray([(np.cos(a), np.sin(a)) for a in np.linspace(0, 2*np.pi, BUBBLE_COUNT, endpoint=False)])
-        self._offsets = RADIUS * self._directions
-        
+        self._offsets = radius * self._directions
+
         vertices = [self.position] + self._offsets
         self._animator: SecondOrderAnimator[np.typing.NDArray[np.float64], np.typing.NDArray[np.float64]] = (
             SecondOrderAnimator(
@@ -157,8 +156,8 @@ void main(){
             vertex_shader=LuxRenderer.VERTEX_SHADER,
             fragment_shader=LuxRenderer.FRAGMENT_SHADER,
         )
-        self._program['in_colour'] = (1.0, 1.0, 1.0, 1.0)
-    
+        self._program['in_colour'] = Color(*color).normalized
+
     def reset(self):
         self.position: Vec2 = Vec2()
         self.velocity: Vec2 = Vec2()

@@ -41,7 +41,7 @@ class GameView(View):
 
         WAVES = [  # noqa: N806
             Wave(10, [
-                MotionPath(Enemy(SpriteCircle(10, arcade.color.WHITE),
+                MotionPath(Enemy(arcade.color.RED,
                                  BulletEmitter(self.center,
                                                        dummy_bullet_list,
                                                        RainbowBullet,
@@ -53,7 +53,7 @@ class GameView(View):
                         Keyframe(10, (self.width * 0.25, self.height * 0.25))])
             ]),
             Wave(10, [
-                MotionPath(Enemy(SpriteCircle(10, arcade.color.WHITE),
+                MotionPath(Enemy(arcade.color.RED,
                                  BulletEmitter((640, 480),
                                                        dummy_bullet_list,
                                                        RainbowBullet,
@@ -69,7 +69,7 @@ class GameView(View):
                          Keyframe(8, (self.width * 0.1, self.height * 0.1)),
                          Keyframe(9, (self.width * 0.1, self.height * 0.9)),
                          Keyframe(10, (self.width * 0.1, self.height * 0.1))]),
-                MotionPath(Enemy(SpriteCircle(10, arcade.color.WHITE),
+                MotionPath(Enemy(arcade.color.RED,
                                  BulletEmitter((640, 480),
                                                        dummy_bullet_list,
                                                        RainbowBullet,
@@ -196,6 +196,8 @@ class GameView(View):
 
         if self.show_spotlight:
             arcade.draw_sprite(self.spotlight)
+            if settings.debug:
+                self.wave_player.draw()
 
         self.health_bar.draw()
         self.score_text.draw()

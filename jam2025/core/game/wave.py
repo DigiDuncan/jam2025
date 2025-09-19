@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 from typing import Self
 from collections.abc import Callable, Sequence
-from arcade import SpriteList
+from arcade import SpriteList, Vec2
 from arcade.types import Point2
 from arcade.clock import GLOBAL_CLOCK
 
+from jam2025.core.game.bullet import BulletList
 from jam2025.core.game.character import Character
 from jam2025.core.game.enemy import Enemy
 from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.lib.anim import lerp, perc
 from jam2025.lib.typing import Seconds
-from .bullet import BulletList
 
 @dataclass
 class Keyframe:
@@ -44,7 +44,7 @@ class MotionPath:
             next_keyframe = self.keyframes[current_keyframe_index + 1]
             current_x = lerp(current_keyframe.position[0], next_keyframe.position[0], perc(current_keyframe.time, next_keyframe.time, time))
             current_y = lerp(current_keyframe.position[1], next_keyframe.position[1], perc(current_keyframe.time, next_keyframe.time, time))
-            self.enemy.position = (current_x, current_y)
+            self.enemy.position = Vec2(current_x, current_y)
 
 
 @dataclass
@@ -90,6 +90,7 @@ class WavePlayer:
         self.spritelist.clear()
         self.wave_count += 1
         self.score_tracker.wave = self.wave_count
+        self.character.health = min(self.character.max_health, self.character.health + 1)
 
     def reset(self) -> None:
         self.playing = False

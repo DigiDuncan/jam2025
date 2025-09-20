@@ -1,13 +1,12 @@
-from arcade import Sprite, SpriteCircle, Text, View, Vec2, LBWH
+from arcade import Sprite, Text, View, Vec2, LBWH
 import arcade
 from arcade.clock import GLOBAL_CLOCK
 from arcade.experimental.bloom_filter import BloomFilter
 
-from jam2025.core.game.bullet import PATTERNS, BossBullet, BulletEmitter, BulletList, RainbowBullet, RandomizedBulletEmitter
 from jam2025.core.game.character import Character
-from jam2025.core.game.enemy import BossEnemy, Enemy
+from jam2025.core.game.constants import WAVES
 from jam2025.core.game.score_tracker import ScoreTracker
-from jam2025.core.game.wave import BossWave, Keyframe, MotionPath, Wave, WavePlayer
+from jam2025.core.game.wave import WavePlayer
 from jam2025.core.ui.bar import HealthBar, WaveBar
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music, load_texture
@@ -17,7 +16,6 @@ from jam2025.core.settings import settings
 from jam2025.lib.anim import ease_linear, perc
 from jam2025.lib.frame import Frame, FrameConfig, TextureConfig, Bloom
 
-dummy_bullet_list = BulletList()
 MAX_SPOTLIGHT_SCALE = 4
 MIN_SPOTLIGHT_SCALE = 2
 
@@ -40,60 +38,8 @@ class GameView(View):
         self.score_tracker = ScoreTracker()
         self.score_tracker.kill_mult = 5
 
-        WAVES = [  # noqa: N806
-            Wave(10, [
-                MotionPath(Enemy(arcade.color.RED,
-                                 BulletEmitter(self.center,
-                                                       dummy_bullet_list,
-                                                       RainbowBullet,
-                                                       PATTERNS["fourway"])),
-                        [Keyframe(0, (self.width * 0.25, self.height * 0.25)),
-                        Keyframe(2.5, (self.width * 0.75, self.height * 0.25)),
-                        Keyframe(5, (self.width * 0.75, self.height * 0.75)),
-                        Keyframe(7.5, (self.width * 0.25, self.height * 0.75)),
-                        Keyframe(10, (self.width * 0.25, self.height * 0.25))])
-            ]),
-            Wave(10, [
-                MotionPath(Enemy(arcade.color.RED,
-                                 BulletEmitter((640, 480),
-                                                       dummy_bullet_list,
-                                                       RainbowBullet,
-                                                       PATTERNS["right"])),
-                        [Keyframe(0, (self.width * 0.1, self.height * 0.1)),
-                         Keyframe(1, (self.width * 0.1, self.height * 0.9)),
-                         Keyframe(2, (self.width * 0.1, self.height * 0.1)),
-                         Keyframe(3, (self.width * 0.1, self.height * 0.9)),
-                         Keyframe(4, (self.width * 0.1, self.height * 0.1)),
-                         Keyframe(5, (self.width * 0.1, self.height * 0.9)),
-                         Keyframe(6, (self.width * 0.1, self.height * 0.1)),
-                         Keyframe(7, (self.width * 0.1, self.height * 0.9)),
-                         Keyframe(8, (self.width * 0.1, self.height * 0.1)),
-                         Keyframe(9, (self.width * 0.1, self.height * 0.9)),
-                         Keyframe(10, (self.width * 0.1, self.height * 0.1))]),
-                MotionPath(Enemy(arcade.color.RED,
-                                 BulletEmitter((640, 480),
-                                                       dummy_bullet_list,
-                                                       RainbowBullet,
-                                                       PATTERNS["left"])),
-                        [Keyframe(0, (self.width * 0.9, self.height * 0.1)),
-                         Keyframe(1, (self.width * 0.9, self.height * 0.9)),
-                         Keyframe(2, (self.width * 0.9, self.height * 0.1)),
-                         Keyframe(3, (self.width * 0.9, self.height * 0.9)),
-                         Keyframe(4, (self.width * 0.9, self.height * 0.1)),
-                         Keyframe(5, (self.width * 0.9, self.height * 0.9)),
-                         Keyframe(6, (self.width * 0.9, self.height * 0.1)),
-                         Keyframe(7, (self.width * 0.9, self.height * 0.9)),
-                         Keyframe(8, (self.width * 0.9, self.height * 0.1)),
-                         Keyframe(9, (self.width * 0.9, self.height * 0.9)),
-                         Keyframe(10, (self.width * 0.9, self.height * 0.1))])
-            ]),
-            BossWave(600, [MotionPath(BossEnemy(
-                RandomizedBulletEmitter(self.window.center, 64, dummy_bullet_list, BossBullet, PATTERNS["eightwayfast"])),
-                [Keyframe(0, self.window.center)])],
-                lambda w, c, s: s.kills_per_wave[s.wave] >= 25)
-        ]
-
-        self.wave_player = WavePlayer(WAVES, self.character, self.score_tracker)
+        waves = [WAVES["rectangle"], WAVES["left_and_right"], WAVES["boss"]]
+        self.wave_player = WavePlayer(waves, self.character, self.score_tracker)
 
         if settings.has_webcam:
             webcam = settings.connected_webcam
@@ -117,7 +63,7 @@ class GameView(View):
         self.spotlight = Sprite(spotlight_texture)
         self.show_spotlight = True
 
-        self.bloom_on = False
+        self.bloom_on = True
         self.post_processing = Frame(FrameConfig(self.size, self.size, self.center, TextureConfig()), self.window.ctx)
         self.post_processing.add_process(Bloom(self.size, 5, self.window.ctx))
 

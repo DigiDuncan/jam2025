@@ -1,13 +1,20 @@
+from jam2025.core.game.constants import load_constants
 from .core.settings import settings, write_settings
 from .core.navigation import navigation
 from .core.application import Window
 from jam2025.lib import logging
 
-from .views import MouseCalibrationView, SelectWebcamView, ViewSelectView, GameView
-from jam2025.tests.animation_test import AnimationTestView
-from jam2025.tests.lux_blob_test import LuxBlobTest
-
 def launch() -> None:
+    logging.setup()
+
+    win = Window()
+    load_constants()
+
+    # I have to import these here...
+    from .views import MouseCalibrationView, SelectWebcamView, ViewSelectView, GameView
+    from jam2025.tests.animation_test import AnimationTestView
+    from jam2025.tests.lux_blob_test import LuxBlobTest
+
     navigation.add_views({
         "lux": (LuxBlobTest, False),
         "v_select": (ViewSelectView, False),
@@ -16,10 +23,6 @@ def launch() -> None:
         "animation_test": (AnimationTestView, False),
         "game": (GameView, False)
     })
-
-    logging.setup()
-
-    win = Window()
     navigation.show_view(settings.initial_view, show_splash = settings.initial_splash)
     win.run()
 

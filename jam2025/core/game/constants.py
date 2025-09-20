@@ -104,7 +104,7 @@ def load_constants() -> None:
             MotionPath(BossEnemy(
                 RandomizedBulletEmitter(center, 64, dummy_bullet_list, BossBullet, PATTERNS["eightwayfast"])),
                     [Keyframe(0, center)])],
-            lambda w, c, s: s.kills_per_wave[s.wave] >= 25)
+            25)
     }
 
 def resize_waves() -> None:

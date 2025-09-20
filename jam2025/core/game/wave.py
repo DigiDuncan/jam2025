@@ -17,7 +17,7 @@ class Keyframe:
     time: Seconds
     position: Point2
 
-type KeyframeList = Sequence[Keyframe]
+type KeyframeList = list[Keyframe]
 
 @dataclass
 class MotionPath:
@@ -54,15 +54,23 @@ class MotionPath:
         current_y = lerp(current_keyframe.position[1], next_keyframe.position[1], perc(current_keyframe.time, next_keyframe.time, time))
         self.enemy.position = Vec2(current_x, current_y)
 
+    def mix(self, new_keyframes: KeyframeList) -> "MotionPath":
+        kf = self.keyframes + new_keyframes
+        kf.sort(key = lambda x: x.time)
+        return MotionPath(self.enemy, kf, self.loop)
 
-@dataclass
+
 class Wave:
-    total_time: Seconds
-    motion_paths: Sequence[MotionPath]
-    skip_condition: Callable[[Self, Character, ScoreTracker], bool] = lambda x, y, z: False
+    def __init__(self, total_time: Seconds, motion_paths: Sequence[MotionPath], skip_condition: Callable[[Self, Character, ScoreTracker], bool] = lambda x, y, z: False):
+        self.total_time = total_time
+        self.motion_paths = motion_paths
+        self.skip_condition = skip_condition
 
 class BossWave(Wave):
-    ...
+    def __init__(self, total_time: Seconds, motion_paths: Sequence[MotionPath], bullets_needed: int):
+        self.bullets_needed = bullets_needed
+        skip_condition = lambda w, c, s: s.kills_per_wave[s.wave] >= bullets_needed  # noqa: E731
+        super().__init__(total_time, motion_paths, skip_condition)
 
 class WavePlayer:
     def __init__(self, waves: list[Wave], character: Character, score_tracker: ScoreTracker) -> None:

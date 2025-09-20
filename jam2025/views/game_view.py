@@ -6,7 +6,7 @@ from arcade.experimental.bloom_filter import BloomFilter
 from jam2025.core.game.character import Character
 from jam2025.core.game.constants import WAVES
 from jam2025.core.game.score_tracker import ScoreTracker
-from jam2025.core.game.wave import WavePlayer
+from jam2025.core.game.wave import BossWave, WavePlayer
 from jam2025.core.ui.bar import HealthBar, WaveBar
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music, load_texture
@@ -38,7 +38,7 @@ class GameView(View):
         self.score_tracker = ScoreTracker()
         self.score_tracker.kill_mult = 5
 
-        waves = [WAVES["rectangle"], WAVES["left_and_right"], WAVES["boss"]]
+        waves = [WAVES["rectangle"], WAVES["left_and_right"], WAVES["rectangle"], WAVES["left_and_right"], WAVES["boss"]]
         self.wave_player = WavePlayer(waves, self.character, self.score_tracker)
 
         if settings.has_webcam:
@@ -123,12 +123,16 @@ class GameView(View):
             self.character.update(delta_time, Vec2(*self.center)) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
 
         self.wave_player.update(delta_time)
-        self.wave_bar.percentage = perc(self.wave_player.current_wave_start_time, self.wave_player.current_wave_start_time + self.wave_player.current_wave.total_time, GLOBAL_CLOCK.time)
+        if isinstance(self.wave_player.current_wave, BossWave):
+            self.wave_bar.percentage = 1 - perc(0, self.wave_player.current_wave.bullets_needed, self.wave_player.score_tracker.kills_per_wave[self.wave_player.score_tracker.wave])
+            self.wave_text.text = f"{self.wave_player.current_wave.bullets_needed - self.wave_player.score_tracker.kills_per_wave[self.wave_player.score_tracker.wave]}"
+        else:
+            self.wave_bar.percentage = perc(self.wave_player.current_wave_start_time, self.wave_player.current_wave_start_time + self.wave_player.current_wave.total_time, GLOBAL_CLOCK.time)
+            self.wave_text.text = f"WAVE {self.wave_player.wave_count}"
 
         self.health_bar.percentage = (self.character.health / self.character.max_health)
         self.score_text.text = f"Score: {self.score_tracker.score}"
         self.finalscore_text.text = f"SCORE: {self.score_tracker.score}"
-        self.wave_text.text = f"{self.wave_player.wave_count}"
 
         self.spotlight.position = self.character.position
         self.spotlight.scale = ease_linear(MIN_SPOTLIGHT_SCALE, MAX_SPOTLIGHT_SCALE, self.health_bar.percentage)

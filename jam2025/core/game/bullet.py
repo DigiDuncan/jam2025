@@ -114,6 +114,15 @@ class BasicBullet(Bullet):
     def on_update(self, delta_time: Seconds) -> None:
         self.sprite.color = arcade.color.GREEN if self.vulnerable else arcade.color.RED
 
+class ScoreBullet(Bullet):
+    def __init__(self, radius: float = 10, damage: Seconds = 1, live_time: Seconds = 10, owner: Any = None) -> None:
+        super().__init__(radius, damage, live_time, owner)
+        self.sprite.color = arcade.color.GREEN
+
+    @property
+    def vulnerable(self) -> bool:
+        return True
+
 class RainbowBullet(Bullet):
     COLOR_IDX = 0
 

@@ -195,18 +195,9 @@ class GameView(View):
         self.clear()
         self.window.use()
         if self.bloom_on:
-            with self.post_processing:
-                self.void.draw()
-                if self.webcam.webcam.connected:
-                    self.webcam.draw()
-            # !: A small issue: the previous layers do not draw if bloom is on.
-                self.wave_player.draw()
-            self.post_processing.render()
+            self.draw_bloomed()
         else:
-            self.void.draw()
-            if self.webcam.webcam.connected:
-                self.webcam.draw()
-            self.wave_player.draw()
+            self.draw_basic()
 
         if self.show_spotlight:
             arcade.draw_sprite(self.spotlight)
@@ -223,3 +214,18 @@ class GameView(View):
             arcade.draw_rect_filled(self.window.rect, arcade.color.BURGUNDY)
             self.gameover_text.draw()
             self.finalscore_text.draw()
+
+    def draw_basic(self):
+        self.void.draw()
+        if self.webcam.webcam.connected:
+            self.webcam.draw()
+        self.wave_player.draw() 
+
+    def draw_bloomed(self):
+        with self.post_processing.capture_unprocessed((0, 0, 0, 0)):
+            self.void.draw()
+            if self.webcam.webcam.connected:
+                self.webcam.draw()
+        with self.post_processing:
+            self.wave_player.draw()
+        self.post_processing.render()

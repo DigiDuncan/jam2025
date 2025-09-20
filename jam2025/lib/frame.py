@@ -3,6 +3,7 @@ Post Processing FrameBuffer
 """
 from array import array
 from dataclasses import dataclass
+from contextlib import contextmanager
 from typing import Any
 
 import arcade
@@ -35,7 +36,7 @@ class Process:
         self.ctx = ctx or arcade.get_window().ctx
         self.geo = gl.geometry.quad_2d_fs()
 
-    def __call__(self, source: gl.Texture2D) -> Any:
+    def __call__(self, base: gl.Texture2D, source: gl.Texture2D) -> Any:
         pass
 
 class Bloom(Process):
@@ -59,8 +60,9 @@ class Bloom(Process):
             fragment_shader=load_shader('Bloom_p_fs')
         )
         self.render_program['strength'] = 0.1
-        self.render_program['source'] = 0
-        self.render_program['blur'] = 1
+        self.render_program['base'] = 0
+        self.render_program['source'] = 1
+        self.render_program['blur'] = 2
 
     def downsample(self, source: gl.Texture2D):
         viewport = self.ctx.viewport
@@ -96,7 +98,7 @@ class Bloom(Process):
         self.ctx.disable(self.ctx.BLEND)
         self.ctx.blend_func = blend
 
-    def __call__(self, source: gl.Texture2D) -> Any:
+    def __call__(self, base: gl.Texture2D, source: gl.Texture2D) -> Any:
         viewport = self.ctx.viewport
 
         with self.fbo.activate():
@@ -104,8 +106,9 @@ class Bloom(Process):
             self.upsample(0.005)
 
         self.ctx.viewport = viewport
-        source.use(0)
-        self.textures[0].use(1)
+        base.use(0)
+        source.use(1)
+        self.textures[0].use(2)
         self.geo.render(self.render_program)
 
 
@@ -118,8 +121,10 @@ class Frame:
 
         self.ctx = ctx
         texture = config.source_texture
+        self.unprocessed_texture = ctx.texture(config.input_size, components=texture.components, dtype=texture.dtype, wrap_x=texture.wrap_x, wrap_y=texture.wrap_y, filter=(texture.filter_x, texture.filter_y))
         self.process_texture_a = ctx.texture(config.input_size, components=texture.components, dtype=texture.dtype, wrap_x=texture.wrap_x, wrap_y=texture.wrap_y, filter=(texture.filter_x, texture.filter_y))
         self.process_texture_b = ctx.texture(config.input_size, components=texture.components, dtype=texture.dtype, wrap_x=texture.wrap_x, wrap_y=texture.wrap_y, filter=(texture.filter_x, texture.filter_y))
+        self.unprocessed_fbo = ctx.framebuffer(color_attachments=self.unprocessed_texture)
         self.process_fbo_a = ctx.framebuffer(color_attachments=self.process_texture_a)
         self.process_fbo_b = ctx.framebuffer(color_attachments=self.process_texture_b)
 
@@ -170,6 +175,10 @@ class Frame:
         self.process_fbo_a.clear(color=colour, depth=depth, viewport=viewport)
         self.process_fbo_b.clear(color=colour, depth=depth, viewport=viewport)
 
+    def capture_unprocessed(self, color: tuple[int, int, int, int] | None = None):
+        self.unprocessed_fbo.clear(color=color)
+        return self.unprocessed_fbo.activate()
+
     def __enter__(self):
         self.use()
         return self
@@ -190,7 +199,7 @@ class Frame:
         self.ctx.viewport = (0, 0, self.config.input_size[0], self.config.input_size[1])
         for process in self.processes:
             with self.process_fbo_b.activate():
-                process(self.process_texture_a)
+                process(self.unprocessed_texture, self.process_texture_a)
             self.process_texture_a, self.process_texture_b = self.process_texture_b, self.process_texture_a
             self.process_fbo_a, self.process_fbo_b = self.process_fbo_b, self.process_fbo_a
 

@@ -23,6 +23,7 @@ type KeyframeList = Sequence[Keyframe]
 class MotionPath:
     enemy: Enemy
     keyframes: KeyframeList
+    loop: bool = True
 
     def update_position(self, time: Seconds) -> None:
         if time <= self.keyframes[0].time:
@@ -30,21 +31,25 @@ class MotionPath:
             self.enemy.position = Vec2(*self.keyframes[0].position)
         elif time >= self.keyframes[-1].time:
             # We're after the last keyframe
-            self.enemy.position = Vec2(*self.keyframes[-1].position)
-        else:
-            # Get the index we're within:
-            current_keyframe = Keyframe(0, (0, 0))
-            current_keyframe_index = 0
-            for i, k in enumerate(self.keyframes):
-                if k.time <= time:
-                    current_keyframe = k
-                    current_keyframe_index = i
-                else:
-                    break
-            next_keyframe = self.keyframes[current_keyframe_index + 1]
-            current_x = lerp(current_keyframe.position[0], next_keyframe.position[0], perc(current_keyframe.time, next_keyframe.time, time))
-            current_y = lerp(current_keyframe.position[1], next_keyframe.position[1], perc(current_keyframe.time, next_keyframe.time, time))
-            self.enemy.position = Vec2(current_x, current_y)
+            if self.loop:
+                time %= self.keyframes[-1].time
+            else:
+                self.enemy.position = Vec2(*self.keyframes[-1].position)
+                return
+
+        # Get the index we're within:
+        current_keyframe = Keyframe(0, (0, 0))
+        current_keyframe_index = 0
+        for i, k in enumerate(self.keyframes):
+            if k.time <= time:
+                current_keyframe = k
+                current_keyframe_index = i
+            else:
+                break
+        next_keyframe = self.keyframes[current_keyframe_index + 1]
+        current_x = lerp(current_keyframe.position[0], next_keyframe.position[0], perc(current_keyframe.time, next_keyframe.time, time))
+        current_y = lerp(current_keyframe.position[1], next_keyframe.position[1], perc(current_keyframe.time, next_keyframe.time, time))
+        self.enemy.position = Vec2(current_x, current_y)
 
 
 @dataclass

@@ -106,3 +106,17 @@ def load_constants() -> None:
                     [Keyframe(0, center)])],
             lambda w, c, s: s.kills_per_wave[s.wave] >= 25)
     }
+
+def resize_waves() -> None:
+    global WAVES, width, height
+
+    new_width_ratio = settings.window_width / width
+    new_height_ratio = settings.window_width / width
+
+    for w in WAVES.values():
+        for mp in w.motion_paths:
+            for k in mp.keyframes:
+                k.position = (k.position[0] * new_width_ratio, k.position[1] * new_height_ratio)
+
+    width = settings.webcam_width
+    height = settings.webcam_height

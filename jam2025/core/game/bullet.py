@@ -313,6 +313,11 @@ class BulletPattern:
         self._last_pattern_time = current_pattern_time
         return returned_patterns
 
+    def mix(self, new_events: list[BulletEvent]) -> BulletPattern:
+        events = self.pattern + new_events
+        events.sort(key = lambda x: x.time)
+        return BulletPattern(self.loop_time, events)
+
 emitter_tex: Texture | None = None
 
 def get_emitter_tex() -> Texture:

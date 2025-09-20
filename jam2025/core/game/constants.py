@@ -1,6 +1,6 @@
 import math
 import arcade
-from jam2025.core.game.bullet import BasicBullet, BossBullet, BulletEmitter, BulletEvent, BulletList, BulletPattern, RainbowBullet, RandomizedBulletEmitter
+from jam2025.core.game.bullet import BasicBullet, BossBullet, BulletEmitter, BulletEvent, BulletList, BulletPattern, RandomizedBulletEmitter
 from jam2025.core.game.enemy import BossEnemy, Enemy
 from jam2025.core.game.wave import BossWave, Keyframe, MotionPath, Wave
 from jam2025.core.settings import settings

@@ -165,13 +165,13 @@ class GameView(View):
             self.gameover_text.draw()
             self.finalscore_text.draw()
 
-    def draw_basic(self):
+    def draw_basic(self) -> None:
         self.void.draw()
         if self.webcam.webcam.connected:
             self.webcam.draw()
-        self.wave_player.draw() 
+        self.wave_player.draw()
 
-    def draw_bloomed(self):
+    def draw_bloomed(self) -> None:
         with self.post_processing.capture_unprocessed((0, 0, 0, 0)):
             self.void.draw()
             if self.webcam.webcam.connected:

@@ -28,9 +28,11 @@ SPLASHES: tuple[Splash, ...] = (
 
 class SplashView(View):
 
-    def __init__(self, next_view: type):
+    def __init__(self, next_view: type, args, kwds):
         super().__init__()
-        self._next = next_view()
+        self._next = next_view
+        self._next_args = args
+        self._next_kds = kwds
 
         self._splash_sprite: Sprite | None = None
         self._splash_timer: float = 0.0
@@ -44,9 +46,10 @@ class SplashView(View):
 
     def leave(self) -> None:
         self._splash_sprite = None
-        if hasattr(self._next, "setup"):
-            self._next.setup()
-        self.window.show_view(self._next)
+        next_view = self._next(*self._next_args, **self._next_kds)
+        if hasattr(next_view, "setup"):
+            next_view.setup()
+        self.window.show_view(next_view)
 
     def _next_splash(self) -> None:
         self._current_splash = next(self._splashes, None)

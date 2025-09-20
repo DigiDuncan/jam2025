@@ -37,6 +37,7 @@ class _Settings:
         self.window_tps: int
 
         self.initial_view: str
+        self.initial_splash: bool
         self._platform: str = platform
 
         self.motion_frequency: float
@@ -130,7 +131,8 @@ _MAPPING: dict[str, dict[str, SettingMapping]] = {
         "name": ("window_name", "GDG jam 2 2025 - Lux: pass the torch"),
         "fps": ("window_fps", 240),
         "tps": ("window_tps", 20),
-        "initial_view": ("initial_view", "m_calibration")
+        "initial_view": ("initial_view", "v_select"),
+        "initial_splash": ("initial_splash", False)
     },
     "control": {
         "frequency": ("motion_frequency", 2.0),

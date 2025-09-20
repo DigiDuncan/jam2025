@@ -69,7 +69,6 @@ class Bullet:
 
     def update(self, delta_time: float) -> None:
         self.on_update(delta_time)
-        self.sprite.alpha = 128 if self.vulnerable else 255
         self.move(delta_time)
         if self._creation_time + self.live_time < GLOBAL_CLOCK.time:
             self.live = False
@@ -80,7 +79,7 @@ class Bullet:
         ...
 
     def on_update(self, delta_time: float) -> None:
-        ...
+        self.sprite.alpha = 128 if self.vulnerable else 255
 
     def on_collide(self, character: Character, score_tracker: ScoreTracker) -> None:
         if not character.invincible:
@@ -106,18 +105,35 @@ class Bullet:
     def on_timeout(self) -> None:
         ...
 
+
+class BasicBullet(Bullet):
+    def __init__(self, radius: float = 10, damage: Seconds = 1, live_time: Seconds = 10, owner: Any = None) -> None:
+        super().__init__(radius, damage, live_time, owner)
+        self.sprite.color = arcade.color.RED
+
+    def on_update(self, delta_time: Seconds) -> None:
+        self.sprite.color = arcade.color.GREEN if self.vulnerable else arcade.color.RED
+
 class RainbowBullet(Bullet):
     COLOR_IDX = 0
 
-    def __init__(self, radius: Seconds = 10, damage: Seconds = 1, live_time: Seconds = 10, owner: Any = None) -> None:
+    def __init__(self, radius: float = 10, damage: Seconds = 1, live_time: Seconds = 10, owner: Any = None) -> None:
         super().__init__(radius, damage, live_time, owner)
         self.sprite.color = noa.get_color(self.__class__.COLOR_IDX, 8, 8)
         self.__class__.COLOR_IDX += 1
         self.__class__.COLOR_IDX %= 12
 
 class BossBullet(Bullet):
-    def __init__(self, radius: Seconds = 20, damage: Seconds = 1, live_time: Seconds = 10, owner: Any = None) -> None:
+    def __init__(self, radius: float = 20, damage: Seconds = 1, live_time: Seconds = 10, owner: Any = None) -> None:
         super().__init__(radius, damage, live_time, owner)
+
+    @property
+    def vulnerable(self) -> bool:
+        """Override this for a different system of choosing vulnerablility; currently half-way through lifetime."""
+        return self._creation_time + self.live_time / 2 < GLOBAL_CLOCK.time
+
+    def on_update(self, delta_time: Seconds) -> None:
+        self.sprite.color = arcade.color.GREEN if self.vulnerable else arcade.color.WHITE
 
 class BulletList:
     def __init__(self, bullets: list[Bullet] | None = None) -> None:

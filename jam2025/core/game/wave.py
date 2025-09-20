@@ -26,6 +26,9 @@ class MotionPath:
     loop: bool = True
 
     def update_position(self, time: Seconds) -> None:
+        if len(self.keyframes) == 1:
+            self.enemy.position = Vec2(*self.keyframes[0].position)
+            return
         if time <= self.keyframes[0].time:
             # We're before keyframe 1
             self.enemy.position = Vec2(*self.keyframes[0].position)

@@ -1,6 +1,6 @@
 import math
 import arcade
-from jam2025.core.game.bullet import BasicBullet, BossBullet, BulletEmitter, BulletEvent, BulletList, BulletPattern, RandomizedBulletEmitter
+from jam2025.core.game.bullet import BasicBullet, BossBullet, BulletEmitter, BulletEvent, BulletList, BulletPattern, RandomizedBulletEmitter, ScoreBullet
 from jam2025.core.game.enemy import BossEnemy, Enemy
 from jam2025.core.game.wave import BossWave, Keyframe, MotionPath, Wave
 from jam2025.core.settings import settings
@@ -101,6 +101,9 @@ def load_constants() -> None:
                     Keyframe(2, (width * 0.9, height * 0.1))])
         ]),
         "boss": BossWave(600, [
+            MotionPath(Enemy(arcade.color.TRANSPARENT_BLACK,
+                BulletEmitter(center, dummy_bullet_list, ScoreBullet, PATTERNS["chaos"])),
+                    [Keyframe(0, center)]),
             MotionPath(BossEnemy(
                 RandomizedBulletEmitter(center, 64, dummy_bullet_list, BossBullet, PATTERNS["eightwayfast"])),
                     [Keyframe(0, center)])],

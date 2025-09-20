@@ -138,8 +138,7 @@ class BossBullet(Bullet):
 
     @property
     def vulnerable(self) -> bool:
-        """Override this for a different system of choosing vulnerablility; currently half-way through lifetime."""
-        return self._creation_time + self.live_time / 2 < GLOBAL_CLOCK.time
+        return False
 
     def on_update(self, delta_time: Seconds) -> None:
         self.sprite.color = arcade.color.GREEN if self.vulnerable else arcade.color.WHITE

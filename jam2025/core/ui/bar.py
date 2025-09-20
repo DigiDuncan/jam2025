@@ -11,6 +11,8 @@ class Bar:
         self.middle_tex_crop = Texture.create_empty(f'{self.middle_tex.atlas_name}_cropped', self.middle_tex.size)
         self.front_tex = load_texture(front) if front is not None else None
 
+        self.forwards = True
+
         self.atlas = get_window().ctx.default_atlas
 
         self.atlas.add(self.middle_tex)
@@ -59,7 +61,10 @@ class Bar:
         self.crop_region.y = self.middle_region.y
         self.crop_region.height = self.middle_region.height
         self.crop_region.width = int(self.percentage * self.middle_region.width)
-        self.crop_region.x = self.middle_region.x + self.middle_region.width - self.crop_region.width
+        if self.forwards:
+            self.crop_region.x = self.middle_region.x
+        else:
+            self.crop_region.x = self.middle_region.x + self.middle_region.width - self.crop_region.width
 
         ux, uy, uw, uh = self.crop_region.x / self.atlas.width, self.crop_region.y / self.atlas.height, self.crop_region.width / self.atlas.width, self.crop_region.height / self.atlas.height
         self.crop_region.texture_coordinates = (ux, uy, ux + uw, uy, ux, uy + uh, ux + uw, uy + uh)
@@ -69,7 +74,10 @@ class Bar:
         self.atlas._texture_uvs.set_slot_data(slot, self.crop_region.texture_coordinates)  # noqa: SLF001 # type: ignore -- wow this line sucks
 
         self.middle_sprite.width = self.crop_region.width
-        self.middle_sprite.right = self.position.x + self.middle_tex.width / 2.0
+        if self.forwards:
+            self.middle_sprite.left = self.position.x - self.middle_tex.width / 2.0
+        else:
+            self.middle_sprite.right = self.position.x + self.middle_tex.width / 2.0
 
         self.spritelist.draw()
 
@@ -80,6 +88,7 @@ class Bar:
 class HealthBar(Bar):
     def __init__(self, position: Vec2):
         super().__init__(position, "health", front = "bar")
+        self.forwards = False
 
 class WaveBar(Bar):
     def __init__(self, position: Vec2):

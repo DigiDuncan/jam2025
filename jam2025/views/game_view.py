@@ -11,10 +11,11 @@ from jam2025.core.game.wave import BossWave, Keyframe, MotionPath, Wave, WavePla
 from jam2025.core.ui.bar import HealthBar, WaveBar
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music, load_texture
-from jam2025.core.webcam import WebcamController
+from jam2025.core.webcam import WebcamController, Webcam
 
 from jam2025.core.settings import settings
 from jam2025.lib.anim import ease_linear, perc
+from jam2025.lib.frame import Frame, FrameConfig, TextureConfig, Bloom
 
 dummy_bullet_list = BulletList()
 MAX_SPOTLIGHT_SCALE = 4
@@ -94,7 +95,12 @@ class GameView(View):
 
         self.wave_player = WavePlayer(WAVES, self.character, self.score_tracker)
 
-        self.webcam = WebcamController(settings.webcam_id, settings.webcam_name, region=self.window.rect, bounds=LBWH(0.9, 0.1, -0.8, 0.8))
+        if settings.has_webcam:
+            webcam = settings.connected_webcam
+        else:
+            webcam = Webcam(settings.webcam_id)
+            settings.connected_webcam = webcam
+        self.webcam = WebcamController(settings.connected_webcam, settings.webcam_name, region=self.window.rect, bounds=LBWH(0.9, 0.1, -0.8, 0.8))
         self.webcam.sprite.size = self.size
         self.webcam.sprite.position = self.center
         self.webcam.sprite.alpha = 128
@@ -112,6 +118,9 @@ class GameView(View):
         self.show_spotlight = True
 
         self.bloom_on = False
+        self.post_processing = Frame(FrameConfig(self.size, self.size, self.center, TextureConfig()), self.window.ctx)
+        self.post_processing.add_process(Bloom(self.size, 5, self.window.ctx))
+
         self.bloom = 5.0
         self.bloom_filter = BloomFilter(int(self.width), int(self.height), self.bloom)
 
@@ -184,18 +193,19 @@ class GameView(View):
 
     def on_draw(self) -> bool | None:
         self.clear()
-        self.void.draw()
-        if self.webcam.webcam.connected:
-            self.webcam.draw()
-
+        self.window.use()
         if self.bloom_on:
+            with self.post_processing:
+                self.void.draw()
+                if self.webcam.webcam.connected:
+                    self.webcam.draw()
             # !: A small issue: the previous layers do not draw if bloom is on.
-            self.bloom_filter.clear()
-            self.bloom_filter.use()
-            self.wave_player.draw()
-            self.window.use()
-            self.bloom_filter.draw()
+                self.wave_player.draw()
+            self.post_processing.render()
         else:
+            self.void.draw()
+            if self.webcam.webcam.connected:
+                self.webcam.draw()
             self.wave_player.draw()
 
         if self.show_spotlight:

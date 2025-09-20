@@ -24,3 +24,7 @@ def load_sound(name: str, ext: str = "wav") -> Sound:
 def load_font(name: str, ext: str = "ttf") -> None:
     with pkg_resources.path(data) as p:
         return _load_font(p / "fonts" / f"{name}.{ext}")
+
+def load_shader(name: str, ext: str = "glsl") -> str:
+    with pkg_resources.path(data) as p:
+        return (p / "shaders" / f"{name}.{ext}").read_text()

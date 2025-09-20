@@ -87,9 +87,10 @@ class SimpleAnimatedWebcamDisplay:
 
 
 class WebcamController:
-    def __init__(self, index: int, name: str, scaling: int = 1, region: arcade.Rect | None = None, bounds: arcade.Rect | None = None) -> None:
-        self.webcam = Webcam(index)
-        self.webcam.connect(start_reading=True)
+    def __init__(self, webcam: Webcam, name: str, scaling: int = 1, region: arcade.Rect | None = None, bounds: arcade.Rect | None = None) -> None:
+        self.webcam = webcam
+        if self.webcam.disconnected:
+            self.webcam.connect(start_reading=True)
 
         self.name = name
         self.scaling = scaling

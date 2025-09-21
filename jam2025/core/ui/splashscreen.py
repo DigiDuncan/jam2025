@@ -30,6 +30,9 @@ class SplashView(View):
 
     def __init__(self, next_view: type, args, kwds):
         super().__init__()
+
+        self.window.set_fullscreen(True)
+
         self._next = next_view
         self._next_args = args
         self._next_kds = kwds

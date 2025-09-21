@@ -10,8 +10,9 @@ WAVES: dict[str, Wave] = {}
 
 dummy_bullet_list = BulletList()
 
-width = settings.window_width
-height = settings.window_height
+# ! HARDCODED BECAUSE FULLSCREEN STUFF
+width = 1920
+height = 1080
 center = (width / 2, height / 2)
 
 def load_constants() -> None:

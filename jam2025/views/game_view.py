@@ -60,9 +60,12 @@ class GameView(View):
         self.mouse_pos = self.center
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
-        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S]Spotlight\n[B] Bloom\n[W] Webcam", 5, 5,
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S]Spotlight\n[B] Bloom\n[W] Webcam\n[F] Show FPS", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
+
+        self.fps_text = Text("FPS 0", 5, self.score_text.bottom - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
+        self.show_fps = False
 
         spotlight_texture = load_texture("spotlight")
         self.spotlight = Sprite(spotlight_texture)
@@ -98,6 +101,8 @@ class GameView(View):
             self.bloom_on = not self.bloom_on
         elif symbol == arcade.key.W:
             self.show_webcam = not self.show_webcam
+        elif symbol == arcade.key.F:
+            self.show_fps = not self.show_fps
 
         if self.game_over:
             self.reset()
@@ -124,7 +129,7 @@ class GameView(View):
     def on_update(self, delta_time: float) -> bool | None:
         if self.game_over:
             return
-        if self.webcam.webcam.connected:
+        if self.webcam.webcam.connected and not self.use_mouse:
             self.webcam.update(delta_time)
             self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor if self.webcam.mapped_cursor else (0, 0))) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))
         else:
@@ -144,6 +149,8 @@ class GameView(View):
 
         self.spotlight.position = self.character.position
         self.spotlight.scale = ease_linear(MIN_SPOTLIGHT_SCALE, MAX_SPOTLIGHT_SCALE, self.health_bar.percentage)
+
+        self.fps_text.text = f"FPS {1/delta_time:.1f}"
 
         if self.character.health <= 0:
             self.player.pause()
@@ -175,6 +182,9 @@ class GameView(View):
             arcade.draw_rect_filled(self.window.rect, arcade.color.BURGUNDY)
             self.gameover_text.draw()
             self.finalscore_text.draw()
+
+        if self.show_fps:
+            self.fps_text.draw()
 
     def draw_basic(self) -> None:
         self.void.draw()

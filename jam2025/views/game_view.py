@@ -98,6 +98,7 @@ class GameView(View):
     def reset(self) -> None:
         self.player.seek(0.0)
         self.character.reset()
+        self.score_tracker.reset()
         self.wave_player.reset()
         self.wave_player.start()
         self.game_over = False

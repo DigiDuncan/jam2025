@@ -9,7 +9,7 @@ from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.game.wave import BossWave, WavePlayer
 from jam2025.core.ui.bar import HealthBar, WaveBar
 from jam2025.core.void import Void
-from jam2025.data.loading import load_music, load_texture
+from jam2025.data.loading import load_music, load_sprite, load_texture
 from jam2025.core.webcam import WebcamController, Webcam
 
 from jam2025.core.settings import settings
@@ -50,12 +50,17 @@ class GameView(View):
         self.webcam.sprite.size = self.size
         self.webcam.sprite.position = self.center
         self.webcam.sprite.alpha = 128
+        self.show_webcam = False
+
+        self.webcam_on_sprite = load_sprite("webcam")
+        self.webcam_on_sprite.right = self.window.rect.right
+        self.webcam_on_sprite.bottom = self.window.rect.bottom
 
         self.use_mouse = False
         self.mouse_pos = self.center
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
-        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S]Spotlight\n[B] Bloom", 5, 5,
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S]Spotlight\n[B] Bloom\n[W] Webcam", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
 
@@ -91,6 +96,8 @@ class GameView(View):
             arcade.get_window().ctx.default_atlas.save("./atlas.png")
         elif symbol == arcade.key.B:
             self.bloom_on = not self.bloom_on
+        elif symbol == arcade.key.W:
+            self.show_webcam = not self.show_webcam
 
         if self.game_over:
             self.reset()
@@ -155,6 +162,9 @@ class GameView(View):
             if settings.debug:
                 self.wave_player.draw()
 
+        if self.webcam.webcam.connected and not self.use_mouse:
+            arcade.draw_sprite(self.webcam_on_sprite)
+
         self.health_bar.draw()
         self.score_text.draw()
         self.controls_text.draw()
@@ -168,14 +178,14 @@ class GameView(View):
 
     def draw_basic(self) -> None:
         self.void.draw()
-        if self.webcam.webcam.connected:
+        if self.webcam.webcam.connected and self.show_webcam:
             self.webcam.draw()
         self.wave_player.draw()
 
     def draw_bloomed(self) -> None:
         with self.post_processing.capture_unprocessed((0, 0, 0, 0)):
             self.void.draw()
-            if self.webcam.webcam.connected:
+            if self.webcam.webcam.connected and self.show_webcam:
                 self.webcam.draw()
         with self.post_processing:
             self.wave_player.draw()

@@ -2,6 +2,7 @@ from arcade import Vec2
 import arcade
 
 from jam2025.core.game.lux import LuxRenderer
+from jam2025.data.loading import load_sound
 from jam2025.core.settings import settings
 
 class Character:
@@ -14,6 +15,9 @@ class Character:
 
         # self.renderer = PlayerRenderer()
         self.renderer = LuxRenderer()
+
+        self.hurt_sound = load_sound("ow")
+        self.score_sound = load_sound("score")
 
         self.invincibility_time = 1.0
         self._invicibility_timer = self.invincibility_time

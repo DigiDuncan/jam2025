@@ -86,8 +86,10 @@ class Bullet:
             if self.vulnerable:
                 self.live = False
                 score_tracker.get_kill()
+                character.score_sound.play()
             else:
                 character.health -= self.damage
+                character.hurt_sound.play()
                 character.iframes()
                 self.live = False
                 self.on_death()

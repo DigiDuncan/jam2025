@@ -12,15 +12,11 @@ def launch() -> None:
 
     # I have to import these here...
     from .views import MouseCalibrationView, SelectWebcamView, ViewSelectView, GameView
-    from jam2025.tests.animation_test import AnimationTestView
-    from jam2025.tests.lux_blob_test import LuxBlobTest
 
     navigation.add_views({
-        "lux": (LuxBlobTest, False),
         "v_select": (ViewSelectView, False),
-        "m_calibration": (MouseCalibrationView, False),
         "select_webcam": (SelectWebcamView, False),
-        "animation_test": (AnimationTestView, False),
+        "calibration": (MouseCalibrationView, False),
         "game": (GameView, False)
     })
     navigation.show_view(settings.initial_view, show_splash = settings.initial_splash)

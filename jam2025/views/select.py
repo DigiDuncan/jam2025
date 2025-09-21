@@ -8,7 +8,7 @@ class ViewSelectView(ArcadeView):
     def __init__(self) -> None:
         super().__init__()
         self._batch = Batch()
-        self._text = [Text(name, self.center_x, self.height - 36 * (idx + 1), font_size=20, anchor_x='center', anchor_y='center', batch=self._batch) for idx, name in enumerate(navigation.available_views)]
+        self._text = [Text(name.replace("_", " ").upper(), self.center_x, self.height - 36 * (idx + 1), font_size=20, anchor_x='center', anchor_y='center', batch=self._batch) for idx, name in enumerate(navigation.available_views) if name != "v_select"]
 
     def setup(self) -> None:
         ...
@@ -27,4 +27,4 @@ class ViewSelectView(ArcadeView):
                 dist = seperation
 
         if closest is not None:
-            navigation.show_view(closest.text)
+            navigation.show_view(closest.text.lower().replace(" ", "_"), show_splash = closest.text.lower().replace(" ", "_") == "game")

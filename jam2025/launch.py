@@ -17,7 +17,7 @@ def launch() -> None:
         "v_select": (ViewSelectView, False),
         "select_webcam": (SelectWebcamView, False),
         "calibration": (MouseCalibrationView, False),
-        "game": (GameView, False)
+        "play": (GameView, False)
     })
     navigation.show_view(settings.initial_view, show_splash = settings.initial_splash)
     win.run()

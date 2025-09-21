@@ -6,3 +6,4 @@ build/
 *.pyc
 .vscode/
 atlas.png
+nuitka-crash-report.xml

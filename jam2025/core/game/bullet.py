@@ -37,6 +37,8 @@ class Bullet:
         self.angular_speed: float = 0
         self.direction = Vec2.from_heading(0)
 
+        self.sound = load_sound('blast')
+
         self._creation_time = GLOBAL_CLOCK.time
 
         self.on_spawn()
@@ -96,7 +98,7 @@ class Bullet:
                 self.on_killed()
 
     def on_spawn(self) -> None:
-        ...
+        self.sound.play()
 
     def on_death(self) -> None:
         ...
@@ -200,8 +202,6 @@ class BulletEmitter:
         self.vulnerable = False
         self.live = True
 
-        self.sound = load_sound('blast')
-
     def set_pattern(self, new_pattern: BulletPattern | None) -> None:
         self.current_pattern = new_pattern
         self.current_pattern_start_time = GLOBAL_CLOCK.time
@@ -217,8 +217,6 @@ class BulletEmitter:
         if not self.current_pattern or not self.live:
             return
         new_events = self.current_pattern.get_events(GLOBAL_CLOCK.time - self.current_pattern_start_time)
-        if new_events:
-            self.sound.play(0.3)
         for e in new_events:
             v = Vec2(e.direction_x, e.direction_y).normalize()
             v = v.rotate(self.direction)
@@ -277,8 +275,6 @@ class RandomizedBulletEmitter(BulletEmitter):
         if not self.current_pattern or not self.live:
             return
         new_events = self.current_pattern.get_events(GLOBAL_CLOCK.time - self.current_pattern_start_time)
-        if new_events:
-            self.sound.play(0.3)
         for e in new_events:
             v = Vec2(e.direction_x, e.direction_y).normalize()
             v = v.rotate(self.direction)

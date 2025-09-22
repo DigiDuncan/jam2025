@@ -7,3 +7,6 @@ build/
 .vscode/
 atlas.png
 nuitka-crash-report.xml
+*.dist/
+*.build/
+compilation-report.xml

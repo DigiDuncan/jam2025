@@ -4,6 +4,7 @@
 # nuitka-project: --standalone
 # nuitka-project: --product-name="pass the torch 2025"
 # nuitka-project: --product-version="0.0.0.0"
+# nuitka-project: --include-package="arcade.gl.backends.opengl"
 # nuitka-project: --file-description=""
 # nuitka-project-if: {OS} == "Darwin":
 #   nuitka-project: --macos-create-app-bundle

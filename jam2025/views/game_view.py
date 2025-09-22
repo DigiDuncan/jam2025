@@ -75,7 +75,7 @@ class GameView(View):
         self.spotlight = Sprite(spotlight_texture)
         self.show_spotlight = True
 
-        self.bloom_on = True
+        self.bloom_on = False
         self.post_processing = Frame(FrameConfig(self.size, self.size, self.center, TextureConfig()), self.window.ctx)
         self.post_processing.add_process(Bloom(self.size, 3, self.window.ctx))
 

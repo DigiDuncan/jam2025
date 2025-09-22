@@ -34,3 +34,4 @@ class ScoreTracker:
         self.wave = 1
         self.time = 0.0
         self.kills = 0
+        self._score = 0

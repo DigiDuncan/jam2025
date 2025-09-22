@@ -10,3 +10,4 @@ nuitka-crash-report.xml
 *.dist/
 *.build/
 compilation-report.xml
+err.*

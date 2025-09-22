@@ -1,7 +1,7 @@
 import math
 import arcade
 from jam2025.core.game.bullet import BasicBullet, BossBullet, BulletEmitter, BulletEvent, BulletList, BulletPattern, RandomizedBulletEmitter, ScoreBullet
-from jam2025.core.game.enemy import BossEnemy, Enemy
+from jam2025.core.game.enemy import BossEnemy, Enemy, InvisibleEnemy
 from jam2025.core.game.wave import BossWave, Keyframe, MotionPath, Wave
 from jam2025.core.settings import settings
 
@@ -18,14 +18,21 @@ center = (width / 2, height / 2)
 def load_constants() -> None:
     PATTERNS.update({
         "right": BulletPattern(0.5, [BulletEvent(0, 1, 0)]),
+        "rightslow": BulletPattern(0.75, [BulletEvent(0, 1, 0)]),
         "top": BulletPattern(0.5, [BulletEvent(0, 0, 1)]),
         "bottom": BulletPattern(0.5, [BulletEvent(0, 0, -1)]),
         "left": BulletPattern(0.5, [BulletEvent(0, -1, 0)]),
+        "leftslow": BulletPattern(0.75, [BulletEvent(0, -1, 0)]),
+        "fourwayslow": BulletPattern(0.75, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0)]),
         "fourway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0)]),
         "eightway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0),
                                         BulletEvent(0, 1, 1), BulletEvent(0, -1, 1), BulletEvent(0, 1, -1), BulletEvent(0, -1, -1)]),
         "eightwayfast": BulletPattern(0.33, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0),
                                         BulletEvent(0, 1, 1), BulletEvent(0, -1, 1), BulletEvent(0, 1, -1), BulletEvent(0, -1, -1)]),
+        "16wayfast": BulletPattern(0.66, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0),
+                                        BulletEvent(0, 1, 1), BulletEvent(0, -1, 1), BulletEvent(0, 1, -1), BulletEvent(0, -1, -1),
+                                        BulletEvent(0.33, 1 / 2, 0 / 2), BulletEvent(0.33, 0 / 2, 1 / 2), BulletEvent(0.33, 0 / 2, -1 / 2), BulletEvent(0.33, -1 / 2, 0 / 2),
+                                        BulletEvent(0.33, 1 / 2, 1 / 2), BulletEvent(0.33, -1 / 2, 1 / 2), BulletEvent(0.33, 1 / 2, -1 / 2), BulletEvent(0.33, -1 / 2, -1 / 2)]),
         "fourwayspin": BulletPattern(0.5, [BulletEvent(0, 1, 0, radius = 200),
                                         BulletEvent(0, 0, 1, radius = 200),
                                         BulletEvent(0, 0, -1, radius = 200),
@@ -71,6 +78,16 @@ def load_constants() -> None:
 
     WAVES.update({
         "rectangle": Wave(30, [
+            MotionPath(InvisibleEnemy(
+                BulletEmitter(center,
+                            dummy_bullet_list,
+                            ScoreBullet,
+                            PATTERNS["fourwayslow"])),
+            [Keyframe(0, (width * 0.25, height * 0.25)),
+            Keyframe(2.5, (width * 0.75, height * 0.25)),
+            Keyframe(5, (width * 0.75, height * 0.75)),
+            Keyframe(7.5, (width * 0.25, height * 0.75)),
+            Keyframe(10, (width * 0.25, height * 0.25))]),
             MotionPath(Enemy(arcade.color.RED,
                 BulletEmitter(center,
                             dummy_bullet_list,
@@ -98,14 +115,30 @@ def load_constants() -> None:
                             PATTERNS["left"])),
                     [Keyframe(0, (width * 0.9, height * 0.1)),
                     Keyframe(1, (width * 0.9, height * 0.9)),
-                    Keyframe(2, (width * 0.9, height * 0.1))])
+                    Keyframe(2, (width * 0.9, height * 0.1))]),
+            MotionPath(Enemy(arcade.color.GREEN,
+                BulletEmitter((640, 480),
+                            dummy_bullet_list,
+                            ScoreBullet,
+                            PATTERNS["rightslow"])),
+                    [Keyframe(0, (width * 0.1, height * 0.9)),
+                    Keyframe(1, (width * 0.1, height * 0.1)),
+                    Keyframe(2, (width * 0.1, height * 0.9))]),
+            MotionPath(Enemy(arcade.color.GREEN,
+                BulletEmitter((640, 480),
+                            dummy_bullet_list,
+                            ScoreBullet,
+                            PATTERNS["leftslow"])),
+                    [Keyframe(0, (width * 0.9, height * 0.9)),
+                    Keyframe(1, (width * 0.9, height * 0.1)),
+                    Keyframe(2, (width * 0.9, height * 0.9))])
         ]),
         "boss": BossWave(600, [
             MotionPath(Enemy(arcade.color.TRANSPARENT_BLACK,
                 BulletEmitter(center, dummy_bullet_list, ScoreBullet, PATTERNS["chaos"])),
                     [Keyframe(0, center)]),
             MotionPath(BossEnemy(
-                RandomizedBulletEmitter(center, 64, dummy_bullet_list, BossBullet, PATTERNS["eightwayfast"])),
+                RandomizedBulletEmitter(center, 64, dummy_bullet_list, BossBullet, PATTERNS["16wayfast"])),
                     [Keyframe(0, center)])],
             25)
     })

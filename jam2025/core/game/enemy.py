@@ -48,6 +48,9 @@ class Enemy:
         arcade.draw_circle_outline(*self.position, self.size, arcade.color.RED, 3)
         draw_cross(Vec2(*self.emitter.sprite.position), self.size, arcade.color.GREEN)
 
+class InvisibleEnemy(Enemy):
+    def __init__(self, emitter: BulletEmitter) -> None:
+        super().__init__(arcade.color.TRANSPARENT_BLACK, emitter)
 
 class BossEnemy(Enemy):
     def __init__(self, emitter: BulletEmitter) -> None:

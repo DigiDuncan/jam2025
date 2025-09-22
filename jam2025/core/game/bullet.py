@@ -53,8 +53,8 @@ class Bullet:
 
     @property
     def vulnerable(self) -> bool:
-        """Override this for a different system of choosing vulnerablility; currently half-way through lifetime."""
-        return self._creation_time + self.live_time / 2 < GLOBAL_CLOCK.time
+        """Override this for a different system of choosing vulnerablility; currently 90% through lifetime."""
+        return self._creation_time + self.live_time * 0.9 < GLOBAL_CLOCK.time
 
     def collide(self, character: Character, score_tracker: ScoreTracker) -> None:
         if self.owner is character:
@@ -81,7 +81,7 @@ class Bullet:
         ...
 
     def on_update(self, delta_time: float) -> None:
-        self.sprite.alpha = 128 if self.vulnerable else 255
+        ...
 
     def on_collide(self, character: Character, score_tracker: ScoreTracker) -> None:
         if not character.invincible:

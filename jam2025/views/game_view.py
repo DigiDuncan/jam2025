@@ -135,8 +135,10 @@ class GameView(View):
             if self.use_mouse:
                 self.game_over_button.update(delta_time, self.mouse_pos)
             else:
+                self.webcam.update(delta_time)
                 self.game_over_button.update(delta_time, self.webcam.mapped_cursor)
             return
+
         if self.webcam.webcam.connected and not self.use_mouse:
             self.webcam.update(delta_time)
             self.character.update(delta_time, Vec2(*self.webcam.mapped_cursor if self.webcam.mapped_cursor else (0, 0))) if not self.use_mouse else self.character.update(delta_time, Vec2(*self.mouse_pos))

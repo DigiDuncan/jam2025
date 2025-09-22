@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 from arcade import Rect, Sound, Vec2
 import arcade
 from arcade.types import Color
@@ -6,7 +7,9 @@ from arcade.types import Color
 from jam2025.lib.anim import lerp, perc
 from jam2025.lib.utils import clamp
 
-class Slider[RT]:
+RT = Any
+
+class Slider:
     def __init__(self, rect: Rect, slider_min: float = 0, slider_max: float = 100,
                  inner_color: Color = arcade.color.BLACK, outer_color: Color = arcade.color.WHITE,
                  border_thickness: int = 3, handle_color: Color = arcade.color.WHITE,

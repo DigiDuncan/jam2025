@@ -136,7 +136,7 @@ void main(){
         self._offsets = radius * self._directions
 
         vertices = [self.position] + self._offsets
-        self._animator: SecondOrderAnimator[np.typing.NDArray[np.float64], np.typing.NDArray[np.float64]] = (
+        self._animator: SecondOrderAnimator = (
             SecondOrderAnimator(
                 np.ones((BUBBLE_COUNT, 1)) * LOCUS_POS_FREQ,
                 np.ones((BUBBLE_COUNT, 1)) * LOCUS_POS_DAMP,

@@ -13,6 +13,9 @@ from arcade.types import HasAddSubMul, Point2
 from PIL import Image
 import numpy as np
 
+T = Any
+L = Any
+
 def nothing(*args: Any) -> None:
     ...
 
@@ -20,14 +23,14 @@ def point_in_circle(center: Point2, radius: float, point: Point2) -> bool:
     d = get_distance(*center, *point)
     return d <= radius
 
-def clamp[T: SupportsRichComparison](min_val: T, val: T, mav_val: T) -> T:
+def clamp(min_val: T, val: T, mav_val: T) -> T:
     """Clamp a `val` to be no lower than `minVal`, and no higher than `maxVal`."""
     return max(min_val, min(mav_val, val))
 
 def snap(n: float, increments: int) -> float:
     return round(increments * n) / increments
 
-def map_range[L: HasAddSubMul](x: L, n1: L, m1: L, n2: L = -1, m2: L = 1) -> L:
+def map_range(x: L, n1: L, m1: L, n2: L = -1, m2: L = 1) -> L:
     """Scale a value `x` that is currently somewhere between `n1` and `m1` to now be in an
     equivalent position between `n2` and `m2`."""
     # Make the range start at 0.

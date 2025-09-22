@@ -63,19 +63,19 @@ class MouseCalibrationView(View):
         self.textbox = TobyScriptTextbox(XYWH(self.center_x, self.center_y, 500, 100), 22, "GohuFont 11 Nerd Font Mono", cps = 20, beep = beep)
 
         threshold_rect = LBWH(self.width - 550, self.center_y + 75, 500, 50)
-        self.threshold_slider = Slider[int](threshold_rect, 1, 255, rounding_function = int)
+        self.threshold_slider = Slider(threshold_rect, 1, 255, rounding_function = int)
         self.threshold_slider.value = 245
         self.threshold_label = make_text("Threshold: 245", self.threshold_slider.rect.left, self.threshold_slider.rect.top + 5)
         self.threshold_slider.register(self.update_threshold)
 
         downsample_rect = LBWH(self.width - 550, self.center_y - 25, 500, 50)
-        self.downsample_slider = Slider[int](downsample_rect, 4, 8, rounding_function = int)
+        self.downsample_slider = Slider(downsample_rect, 4, 8, rounding_function = int)
         self.downsample_slider.value = 8
         self.downsample_label = make_text("Downsample: 8x", self.downsample_slider.rect.left, self.downsample_slider.rect.top + 5)
         self.downsample_slider.register(self.update_downsample)
 
         polled_points_rect = LBWH(self.width - 550, self.center_y - 125, 500, 50)
-        self.polled_points_slider = Slider[int](polled_points_rect, 1, 500, rounding_function = int)
+        self.polled_points_slider = Slider(polled_points_rect, 1, 500, rounding_function = int)
         self.polled_points_slider.value = 50
         self.polled_points_label = make_text("Polled Points: 50", self.polled_points_slider.rect.left, self.polled_points_slider.rect.top + 5)
         self.polled_points_slider.register(self.update_polled_points)

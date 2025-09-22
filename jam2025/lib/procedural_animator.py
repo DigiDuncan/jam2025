@@ -1,7 +1,7 @@
 from __future__ import annotations
 from math import pi, tau, ceil, exp, cos, cosh
 
-from typing import Protocol, Optional, Self
+from typing import Any
 
 
 __all__ = (
@@ -14,18 +14,11 @@ __all__ = (
     'update_default_animator'
 )
 
-class Animatable(Protocol):
-    def __mul__(self, other: float | Self, /) -> Self: ...
-    def __rmul__(self, other: float | Self, /) -> Self: ...
-    def __truediv__(self, other: float | Self, /) -> Self: ...
-    def __rtruediv__(self, other: float | Self, /) -> Self: ...
-    def __add__(self, other: float | Self, /) -> Self: ...
-    def __radd__(self, other: float | Self, /) -> Self: ...
-    def __sub__(self, other: float | Self, /) -> Self: ...
-    def __rsub__(self, other: float | Self, /) -> Self: ...
-    def __pow__(self, other: float | Self, /) -> Self: ...
+Animatable = Any # god damn in nuitka
+K = Any
+A = Any
 
-class SecondOrderAnimatorBase[A: Animatable, K: Animatable]:
+class SecondOrderAnimatorBase:
 
     def __init__(self, frequency: K, damping: K, response: K,  x_initial: A, y_initial: A, y_d_initial: A):
         self.xp: A = x_initial
@@ -43,7 +36,7 @@ class SecondOrderAnimatorBase[A: Animatable, K: Animatable]:
     @property
     def frequency(self) -> K:
         return self._freq
-    
+
     @frequency.setter
     def frequency(self, frequency: K ):
         self._freq = frequency
@@ -52,7 +45,7 @@ class SecondOrderAnimatorBase[A: Animatable, K: Animatable]:
     @property
     def damping(self) -> K:
         return self._damp
-    
+
     @damping.setter
     def damping(self, damping: K) -> None:
         self._damp = damping
@@ -61,7 +54,7 @@ class SecondOrderAnimatorBase[A: Animatable, K: Animatable]:
     @property
     def response(self) -> K:
         return self._damp
-    
+
     @response.setter
     def response(self, response: K) -> None:
         self._resp = response
@@ -83,7 +76,7 @@ class SecondOrderAnimatorBase[A: Animatable, K: Animatable]:
         raise NotImplementedError()
 
 
-class SecondOrderAnimator[A: Animatable, K: Animatable](SecondOrderAnimatorBase[A, K]):
+class SecondOrderAnimator(SecondOrderAnimatorBase):
     """
     The most basic implementation of the second order procedural animator.
 
@@ -100,7 +93,7 @@ class SecondOrderAnimator[A: Animatable, K: Animatable](SecondOrderAnimatorBase[
         return self.y
 
 
-class SecondOrderAnimatorTCritical[A: Animatable](SecondOrderAnimatorBase[A, float]):
+class SecondOrderAnimatorTCritical(SecondOrderAnimatorBase):
     """
     A slightly more complex implementation which tries to stay physically accurate.
 
@@ -116,7 +109,7 @@ class SecondOrderAnimatorTCritical[A: Animatable](SecondOrderAnimatorBase[A, flo
         super().calc_k_vals()
         self.T_crit = 0.8 * ((4.0 * self.k2 + self.k1 * self.k1)**0.5 - self.k1)
 
-    def update(self, dt: float, nx: A, dx: Optional[A] = None):
+    def update(self, dt: float, nx: A, dx: A | None = None):
         dx = dx or (nx - self.xp) / dt
         self.xp = nx
 
@@ -134,7 +127,7 @@ class SecondOrderAnimatorTCritical[A: Animatable](SecondOrderAnimatorBase[A, flo
         return y
 
 
-class SecondOrderAnimatorKClamped[A: Animatable, K: Animatable](SecondOrderAnimatorBase[A, K]):
+class SecondOrderAnimatorKClamped(SecondOrderAnimatorBase):
     """
     A version of the sim that prioritises stability over physical accuracy.
 
@@ -155,7 +148,7 @@ class SecondOrderAnimatorKClamped[A: Animatable, K: Animatable](SecondOrderAnima
         return self.y
 
 
-class SecondOrderAnimatorPoleZero[A: Animatable](SecondOrderAnimatorBase[A, float]):
+class SecondOrderAnimatorPoleZero(SecondOrderAnimatorBase):
     """
     The most complex version of the sim that is more accurate for higher speeds.
 
@@ -175,7 +168,7 @@ class SecondOrderAnimatorPoleZero[A: Animatable](SecondOrderAnimatorBase[A, floa
         self._w = tau * self._freq
         self._d = self._w * (abs(self._damp * self._damp - 1.0))
 
-    def update(self, dt: float, nx: A, dx: Optional[A] = None):
+    def update(self, dt: float, nx: A, dx: A | None = None):
         dx = dx or (nx - self.xp) / dt
         self.xp = nx
         if self._w * dt < self._damp:

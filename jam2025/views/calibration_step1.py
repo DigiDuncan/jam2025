@@ -45,9 +45,7 @@ class MouseCalibrationView(View):
             webcam.connect(True)
 
         self.webcam = WebcamController(webcam, settings.webcam_name)
-        self.webcam.sprite.size = (self.size[0] / 2, self.size[1] / 2)
-        self.webcam.sprite.center_x = self.center_x
-        self.webcam.sprite.top = self.window.rect.top - 100
+        self.webcam.region = XYWH(self.center_x, 0.75 * self.height - 100, self.width / 2, self.height/2)
 
         popup_rect = XYWH(self.center_x, self.center_y, 128, 128)
         self.popup = Popup(popup_rect, fade_in = 1.0, hold = 3.0, fade_out = 1.0)
@@ -167,10 +165,11 @@ class MouseCalibrationView(View):
 
         # (640.0, 440.0)
         if Phase.SHOW_CALIB in self.dialouge_times:
-            self.webcam.sprite.position = (
-                ease_quadinout(640.0, (self.webcam.sprite.width / 2) + 10, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time)),
-                ease_quadinout(440.0, self.center_y, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))
-            )
+            pos = self.webcam.region.center
+            size = self.webcam.region.size
+            next_x = ease_quadinout(640.0, size[0]/2 + 10, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))
+            next_y = ease_quadinout(440.0, self.center_y, perc(self.dialouge_times[Phase.SHOW_CALIB], self.dialouge_times[Phase.SHOW_CALIB] + 1, GLOBAL_CLOCK.time))
+            self.webcam.region = XYWH(next_x, next_y, self.width / 2, self.height /2)
             self.webcam.force_debug = True
 
             for slider, text in zip([self.threshold_slider, self.downsample_slider, self.polled_points_slider], [self.threshold_label, self.downsample_label, self.polled_points_label], strict = True):

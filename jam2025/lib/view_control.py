@@ -20,7 +20,7 @@ class Transition:
     def available_views(self) -> tuple[str, ...]:
         return tuple(self._views.keys())
 
-    def add_view[T: View](self, name: str, typ: type[T], persistent: bool = False, view: T | None = None) -> None:
+    def add_view(self, name: str, typ: type[View], persistent: bool = False, view: View | None = None) -> None:
         if name in self._views:
             raise KeyError(f"{name} is already a registered view")
 

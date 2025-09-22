@@ -43,6 +43,8 @@ class Webcam:
         if invalid_connection:
             raise ValueError(f'Webcam {self._index} has already been connected, call disconnect first.')
         self._webcam_read = start_reading
+        with self._data_lock:
+            self._webcam_state = Webcam.CONNECTING
         self._thread.start()
 
     def disconnect(self, block: bool = False) -> None:
@@ -165,8 +167,6 @@ class Webcam:
 
     def _poll(self) -> None:
         logger.debug(f'webcam {self._index}: thread started')
-        with self._data_lock:
-            self._webcam_state = Webcam.CONNECTING
         try:
             webcam = cv2.VideoCapture(self._index, cv2.CAP_DSHOW if self._dshow else 0)
             if not webcam.isOpened():

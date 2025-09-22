@@ -1,6 +1,8 @@
+from __future__ import annotations
 import cv2
 import queue
 import threading
+import weakref
 
 import numpy as np
 
@@ -8,6 +10,7 @@ from .logging import logger
 
 type WebcamState = int
 class Webcam:
+    _cache: weakref.WeakSet[Webcam] = weakref.WeakSet()
     DISCONNECTED: WebcamState = 0 # thread has not started
     CONNECTING: WebcamState = 1 # has found camera but hasn't gotten first frame
     CONNECTED: WebcamState = 2 # has found camera and has properties
@@ -17,6 +20,8 @@ class Webcam:
         self._index: int = index
         self._dshow: bool = use_dshow
         self._webcam: cv2.VideoCapture | None = None
+
+        Webcam._cache.add(self)
 
         # Webcam properties that must be read through the data lock
         self._webcam_size: tuple[int, int] | None = None

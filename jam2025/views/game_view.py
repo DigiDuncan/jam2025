@@ -73,7 +73,7 @@ class GameView(View):
 
         self.bloom_on = True
         self.post_processing = Frame(FrameConfig(self.size, self.size, self.center, TextureConfig()), self.window.ctx)
-        self.post_processing.add_process(Bloom(self.size, 5, self.window.ctx))
+        self.post_processing.add_process(Bloom(self.size, 3, self.window.ctx))
 
         self.bloom = 5.0
         self.bloom_filter = BloomFilter(int(self.width), int(self.height), self.bloom)

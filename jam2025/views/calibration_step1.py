@@ -12,7 +12,7 @@ from jam2025.core.void import Void
 from jam2025.data.loading import load_music, load_sound
 from jam2025.lib.anim import ease_quadinout, ease_quadout, lerp, perc
 from jam2025.lib.logging import logger
-from jam2025.core.webcam import WebcamController
+from jam2025.core.webcam import WebcamController, Webcam
 from jam2025.lib.typing import FOREVER
 from jam2025.core.settings import settings
 from jam2025.lib.utils import open_settings
@@ -35,7 +35,16 @@ class MouseCalibrationView(View):
         self.music = load_music("found-in-space-17")
         self.player = self.music.play(volume = 0.0, loop = True)
 
-        self.webcam = WebcamController(settings.webcam_id, settings.webcam_name)
+        if settings.connected_webcam is not None:
+            webcam = settings.connected_webcam
+        else:
+            webcam = Webcam(settings.webcam_id)
+            settings.connected_webcam = webcam
+
+        if webcam.disconnected:
+            webcam.connect(True)
+
+        self.webcam = WebcamController(webcam, settings.webcam_name)
         self.webcam.sprite.size = (self.size[0] / 2, self.size[1] / 2)
         self.webcam.sprite.center_x = self.center_x
         self.webcam.sprite.top = self.window.rect.top - 100

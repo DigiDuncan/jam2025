@@ -4,6 +4,8 @@ from .core.navigation import navigation
 from .core.application import Window
 from jam2025.lib import logging
 
+from .views import MouseCalibrationView, SelectWebcamView, ViewSelectView, GameView
+
 def launch() -> None:
     logging.setup()
 
@@ -11,8 +13,6 @@ def launch() -> None:
     load_constants()
 
     # I have to import these here...
-    from .views import MouseCalibrationView, SelectWebcamView, ViewSelectView, GameView
-
     navigation.add_views({
         "v_select": (ViewSelectView, False),
         "select_webcam": (SelectWebcamView, False),

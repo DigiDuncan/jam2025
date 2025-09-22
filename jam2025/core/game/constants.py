@@ -16,8 +16,7 @@ height = 1080
 center = (width / 2, height / 2)
 
 def load_constants() -> None:
-    global PATTERNS, WAVES
-    PATTERNS = {
+    PATTERNS.update({
         "right": BulletPattern(0.5, [BulletEvent(0, 1, 0)]),
         "top": BulletPattern(0.5, [BulletEvent(0, 0, 1)]),
         "bottom": BulletPattern(0.5, [BulletEvent(0, 0, -1)]),
@@ -68,9 +67,9 @@ def load_constants() -> None:
                 BulletEvent(6*math.pi/7,  math.sin(6*math.tau/7), -math.cos(6*math.tau/7)),
             ]
         )
-    }
+    })
 
-    WAVES = {
+    WAVES.update({
         "rectangle": Wave(30, [
             MotionPath(Enemy(arcade.color.RED,
                 BulletEmitter(center,
@@ -109,7 +108,7 @@ def load_constants() -> None:
                 RandomizedBulletEmitter(center, 64, dummy_bullet_list, BossBullet, PATTERNS["eightwayfast"])),
                     [Keyframe(0, center)])],
             25)
-    }
+    })
 
 def resize_waves() -> None:
     global WAVES, width, height

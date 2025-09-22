@@ -21,8 +21,8 @@ def load_constants() -> None:
         "rightslow": BulletPattern(0.75, [BulletEvent(0, 1, 0)]),
         "top": BulletPattern(0.5, [BulletEvent(0, 0, 1)]),
         "bottom": BulletPattern(0.5, [BulletEvent(0, 0, -1)]),
-        "left": BulletPattern(0.5, [BulletEvent(0, -1, 0)]),
-        "leftslow": BulletPattern(0.75, [BulletEvent(0, -1, 0)]),
+        "left": BulletPattern(0.5, [BulletEvent(0.25, -1, 0)]),
+        "leftslow": BulletPattern(0.75, [BulletEvent(0.33, -1, 0)]),
         "fourwayslow": BulletPattern(0.75, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0)]),
         "fourway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0)]),
         "eightway": BulletPattern(0.5, [BulletEvent(0, 1, 0), BulletEvent(0, 0, 1), BulletEvent(0, 0, -1), BulletEvent(0, -1, 0),
@@ -133,6 +133,35 @@ def load_constants() -> None:
                     Keyframe(1, (width * 0.9, height * 0.1)),
                     Keyframe(2, (width * 0.9, height * 0.9))])
         ]),
+        "triangle": Wave(20, [
+            MotionPath(Enemy(arcade.color.RED, BulletEmitter(center,
+                                                             dummy_bullet_list,
+                                                             BasicBullet,
+                                                             PATTERNS["eightway"])),
+                        [
+                            Keyframe(0, (0, height)),
+                            Keyframe(1, (width, height)),
+                            Keyframe(2, (width / 2, 0)),
+                            Keyframe(3, (0, height))
+                        ]),
+            MotionPath(Enemy(arcade.color.RED, BulletEmitter(center,
+                                                             dummy_bullet_list,
+                                                             BasicBullet,
+                                                             PATTERNS["eightway"])),
+                        [
+                            Keyframe(0, (width / 2, height)),
+                            Keyframe(1, (width, 0)),
+                            Keyframe(2, (0, 0)),
+                            Keyframe(3, (width / 2, height))
+                        ]),
+            MotionPath(Enemy(arcade.color.GREEN, BulletEmitter(center,
+                                                             dummy_bullet_list,
+                                                             ScoreBullet,
+                                                             PATTERNS["fourwayslow"])),
+                        [
+                            Keyframe(0, center)
+                        ])
+        ]),
         "boss": BossWave(600, [
             MotionPath(Enemy(arcade.color.TRANSPARENT_BLACK,
                 BulletEmitter(center, dummy_bullet_list, ScoreBullet, PATTERNS["chaos"])),
@@ -140,7 +169,31 @@ def load_constants() -> None:
             MotionPath(BossEnemy(
                 RandomizedBulletEmitter(center, 64, dummy_bullet_list, BossBullet, PATTERNS["16wayfast"])),
                     [Keyframe(0, center)])],
-            25)
+            25),
+        "boss2": BossWave(600, [
+            MotionPath(Enemy(arcade.color.TRANSPARENT_BLACK,
+                BulletEmitter(center, dummy_bullet_list, ScoreBullet, PATTERNS["chaos"])),
+                    [Keyframe(0, center)]),
+            MotionPath(BossEnemy(
+                RandomizedBulletEmitter(center, 64, dummy_bullet_list, BossBullet, PATTERNS["16wayfast"])),
+                    [Keyframe(0, center)]),
+            MotionPath(Enemy(arcade.color.RED,
+                BulletEmitter((640, 480),
+                            dummy_bullet_list,
+                            BasicBullet,
+                            PATTERNS["right"])),
+                    [Keyframe(0, (width * 0.1, height * 0.1)),
+                    Keyframe(1, (width * 0.1, height * 0.9)),
+                    Keyframe(2, (width * 0.1, height * 0.1))]),
+            MotionPath(Enemy(arcade.color.RED,
+                BulletEmitter((640, 480),
+                            dummy_bullet_list,
+                            BasicBullet,
+                            PATTERNS["left"])),
+                    [Keyframe(0, (width * 0.9, height * 0.1)),
+                    Keyframe(1, (width * 0.9, height * 0.9)),
+                    Keyframe(2, (width * 0.9, height * 0.1))])],
+            40)
     })
 
 def resize_waves() -> None:

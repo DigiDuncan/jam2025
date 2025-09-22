@@ -41,7 +41,8 @@ class GameView(View):
         self.score_tracker = ScoreTracker()
         self.score_tracker.kill_mult = 5
 
-        waves = [WAVES["rectangle"], WAVES["left_and_right"], WAVES["rectangle"], WAVES["left_and_right"], WAVES["boss"]]
+        waves = [WAVES["rectangle"], WAVES["left_and_right"], WAVES["triangle"], WAVES["boss"],
+                 WAVES["rectangle"], WAVES["left_and_right"], WAVES["triangle"], WAVES["boss2"]]
         self.wave_player = WavePlayer(waves, self.character, self.score_tracker)
 
         if settings.has_webcam:

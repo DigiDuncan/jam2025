@@ -8,6 +8,7 @@ from jam2025.core.game.constants import WAVES
 from jam2025.core.game.score_tracker import ScoreTracker
 from jam2025.core.game.wave import BossWave, WavePlayer
 from jam2025.core.ui.bar import HealthBar, WaveBar
+from jam2025.core.ui.button import HoverButton
 from jam2025.core.void import Void
 from jam2025.data.loading import load_music, load_sprite, load_texture
 from jam2025.core.webcam import WebcamController, Webcam
@@ -24,6 +25,8 @@ class GameView(View):
     def __init__(self) -> None:
         View.__init__(self)
         self.void = Void(self.window.rect)
+        self.show_void = True
+
         self.music = load_music("found-in-space-17")
         self.player = self.music.play(volume = 0.05, loop = True)
 
@@ -60,7 +63,7 @@ class GameView(View):
         self.mouse_pos = self.center
 
         self.score_text = Text("Score: 0", 5, self.height - 5, font_size = 22, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top")
-        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S]Spotlight\n[B] Bloom\n[W] Webcam\n[F] Show FPS", 5, 5,
+        self.controls_text = Text("[M]: Use Mouse\n[R]: Reset\n[D]: Debug Overlay\n[Numpad *]: Heal\n[S]Spotlight\n[B] Bloom\n[W] Webcam\n[F] Show FPS\n[V] Show Void", 5, 5,
                                   font_size = 11, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "bottom",
                                   multiline = True, width = int(self.width / 4))
 
@@ -80,8 +83,9 @@ class GameView(View):
 
         self.game_over = False
 
-        self.gameover_text = Text("GAME OVER", self.center_x, self.center_y, font_size = 88, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "center", anchor_x = "center", align = "center")
-        self.finalscore_text = Text("SCORE: X", self.center_x, self.gameover_text.bottom - 5, font_size = 44, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "center", align = "center")
+        self.gameover_text = Text("GAME OVER", self.center_x, self.height * 0.66, font_size = 88, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "center", anchor_x = "center", align = "center")
+        self.finalscore_text = Text("SCORE: X", self.center_x, self.height * 0.5, font_size = 44, font_name = "GohuFont 11 Nerd Font Mono", anchor_y = "top", anchor_x = "center", align = "center")
+        self.game_over_button = HoverButton(self.center_x, self.height * 0.33, 40, 5, callback = self.reset_on_game_over)
 
     def on_key_press(self, symbol: int, modifiers: int) -> bool | None:
         if symbol == arcade.key.M:
@@ -103,9 +107,8 @@ class GameView(View):
             self.show_webcam = not self.show_webcam
         elif symbol == arcade.key.F:
             self.show_fps = not self.show_fps
-
-        if self.game_over:
-            self.reset()
+        elif symbol == arcade.key.V:
+            self.show_void = not self.show_void
 
     def reset(self) -> None:
         self.player.seek(0.0)
@@ -122,12 +125,16 @@ class GameView(View):
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         self.mouse_pos = (x, y)
 
-    def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> bool | None:
+    def reset_on_game_over(self) -> None:
         if self.game_over:
             self.reset()
 
     def on_update(self, delta_time: float) -> bool | None:
         if self.game_over:
+            if self.use_mouse:
+                self.game_over_button.update(delta_time, self.mouse_pos)
+            else:
+                self.game_over_button.update(delta_time, self.webcam.mapped_cursor)
             return
         if self.webcam.webcam.connected and not self.use_mouse:
             self.webcam.update(delta_time)
@@ -174,7 +181,7 @@ class GameView(View):
 
         self.health_bar.draw()
         self.score_text.draw()
-        self.controls_text.draw()
+        # self.controls_text.draw()
         self.wave_bar.draw()
         self.wave_text.draw()
 
@@ -182,19 +189,26 @@ class GameView(View):
             arcade.draw_rect_filled(self.window.rect, arcade.color.BURGUNDY)
             self.gameover_text.draw()
             self.finalscore_text.draw()
+            self.game_over_button.draw()
+            if self.use_mouse:
+                arcade.draw_circle_filled(*self.mouse_pos, 10, arcade.color.WHITE)
+            else:
+                arcade.draw_circle_filled(*self.webcam.mapped_cursor, 10, arcade.color.WHITE)
 
         if self.show_fps:
             self.fps_text.draw()
 
     def draw_basic(self) -> None:
-        self.void.draw()
+        if self.show_void:
+            self.void.draw()
         if self.webcam.webcam.connected and self.show_webcam:
             self.webcam.draw()
         self.wave_player.draw()
 
     def draw_bloomed(self) -> None:
         with self.post_processing.capture_unprocessed((0, 0, 0, 0)):
-            self.void.draw()
+            if self.show_void:
+                self.void.draw()
             if self.webcam.webcam.connected and self.show_webcam:
                 self.webcam.draw()
         with self.post_processing:
